@@ -14,18 +14,6 @@ npm start
 ```
 개발 서버는 http://localhost:3000 에서 실행됩니다.
 
-### 프로젝트 빌드
-```bash
-npm run build
-```
-
-### 테스트 실행
-```bash
-npm test
-```
-
-### 기타 명령어
-- `npm run eject`: React 설정을 직접 관리하고 싶을 때 사용 (주의: 되돌릴 수 없습니다)
 
 ## 기술 스택
 - React 18.3.1
