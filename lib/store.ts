@@ -5,9 +5,10 @@ const VISITS_KEY = 'lunch-app-visits';
 
 const defaultPreferences: Pref = {
   mode: 'light',
-  allergens: [],
+  allergies: [],
   dislikes: [],
   groupSize: 1,
+  weather: true,
 };
 
 export function getPreferences(): Pref {
