@@ -17,11 +17,13 @@ export function getRecommendations(
   const prefs = getPreferences();
 
   const weights = config?.weights || {
-    distance: 0.3,
-    novelty7d: 0.25,
-    preference: 0.25,
-    season: 0.1,
-    weather: 0.1
+    distance: 0.20,
+    novelty7d: 0.10,
+    preference: 0.15,
+    nutrition: 0.15,
+    weather: 0.25,
+    situation: 0.10,
+    group: 0.05
   };
 
   const scored = available.map(restaurant =>
@@ -51,18 +53,32 @@ function scoreRestaurant(
   score += 0.5;
 
   // Distance score (simplified - all restaurants are close)
-  const distanceScore = 0.8;
-  score += distanceScore * (weights?.distance || 0.3);
+  let distanceScore = 0.8;
+  let distanceModifier = 1.0;
+
+  // Weather score (calculate early to get distance modifier)
+  if (weather && prefs.weather) {
+    const weatherResult = calculateWeatherScore(restaurant, weather);
+    score += weatherResult.score * (weights?.weather || 0.25);
+    distanceModifier = weatherResult.distanceModifier;
+    if (weatherResult.reasons.length > 0) {
+      reasons.push(...weatherResult.reasons);
+    }
+  }
+
+  // Apply weather modifier to distance
+  distanceScore *= distanceModifier;
+  score += distanceScore * (weights?.distance || 0.20);
   if (distanceScore > 0.7) reasons.push('가까운 거리');
 
   // Novelty score (already handled by filtering recent visits)
   const noveltyScore = 1.0;
-  score += noveltyScore * (weights?.novelty7d || 0.25);
+  score += noveltyScore * (weights?.novelty7d || 0.10);
   if (noveltyScore > 0.8) reasons.push('7일 미섭취');
 
   // Preference score
   const prefScore = calculatePreferenceScore(restaurant, prefs);
-  score += prefScore * (weights?.preference || 0.25);
+  score += prefScore * (weights?.preference || 0.15);
   if (prefScore > 0.7) {
     if (prefs.mode === 'heavy' && restaurant.macros.protein > 25) {
       reasons.push('단백질');
@@ -72,18 +88,17 @@ function scoreRestaurant(
     }
   }
 
-  // Season score
-  const seasonScore = restaurant.season.includes('autumn') ? 1.0 : 0.5;
-  score += seasonScore * (weights?.season || 0.1);
+  // Nutrition score (based on mode and macros)
+  const nutritionScore = calculateNutritionScore(restaurant, prefs);
+  score += nutritionScore * (weights?.nutrition || 0.15);
 
-  // Weather score
-  if (weather && prefs.weather) {
-    const weatherScore = calculateWeatherScore(restaurant, weather);
-    score += weatherScore.score * (weights?.weather || 0.1);
-    if (weatherScore.reasons.length > 0) {
-      reasons.push(...weatherScore.reasons);
-    }
-  }
+  // Situation score (placeholder for future expansion)
+  const situationScore = 0.5; // neutral
+  score += situationScore * (weights?.situation || 0.10);
+
+  // Group score (based on group size)
+  const groupScore = Math.min(1.0, 1.0 / Math.max(1, prefs.groupSize - 1));
+  score += groupScore * (weights?.group || 0.05);
 
   return { restaurant, score, reasons };
 }
@@ -115,62 +130,94 @@ function calculatePreferenceScore(restaurant: Restaurant, prefs: Pref): number {
   return Math.max(0, Math.min(1, score));
 }
 
+function calculateNutritionScore(restaurant: Restaurant, prefs: Pref): number {
+  let score = 0.5;
+
+  const { macros } = restaurant;
+
+  if (prefs.mode === 'light') {
+    // Prefer lower calorie, balanced nutrition
+    if (macros.kcal < 400) score += 0.3;
+    if (macros.protein >= 15 && macros.protein <= 25) score += 0.2;
+  } else {
+    // Prefer higher protein, substantial meals
+    if (macros.protein > 25) score += 0.3;
+    if (macros.kcal > 500) score += 0.2;
+  }
+
+  return Math.max(0, Math.min(1, score));
+}
+
 function calculateWeatherScore(restaurant: Restaurant, weather: WeatherSnapshot): {
   score: number;
   reasons: string[];
+  distanceModifier: number;
 } {
-  let score = 0.5;
+  let score = 0.0;
   const reasons: string[] = [];
+  let distanceModifier = 1.0;
 
   const { flags } = weather;
 
   // Wet or cold weather preferences
   if (flags.wet || flags.feels_cold) {
     if (restaurant.tags.includes('warm') || restaurant.tags.includes('soup')) {
-      score += 0.4;
+      score += 0.5;
+      distanceModifier = 0.85; // Prefer closer places in bad weather
       if (flags.wet) reasons.push('비 예보');
       if (flags.feels_cold) reasons.push('체감 추움');
+    } else if (restaurant.tags.includes('salad') || restaurant.tags.includes('cold')) {
+      score -= 0.3; // Penalize cold foods in bad weather
     }
   }
 
   // Muggy weather preferences
   if (flags.muggy) {
-    if (restaurant.tags.includes('salad') || restaurant.tags.includes('light')) {
-      score += 0.3;
+    if (restaurant.tags.includes('salad') || restaurant.tags.includes('cold') || restaurant.tags.includes('light')) {
+      score += 0.4;
       reasons.push('후덥지근');
     }
   }
 
-  // Clear weather preferences
+  // Clear weather preferences (10-20°C range)
   if (flags.clear) {
-    if (restaurant.tags.includes('light')) {
-      score += 0.2;
-      reasons.push('맑음');
+    const temp = weather.T1H || weather.TMP || 15;
+    if (temp >= 10 && temp <= 20) {
+      if (restaurant.tags.includes('light')) {
+        score += 0.2;
+        reasons.push('맑음');
+      }
     }
   }
 
   // Windy weather
   if (flags.windy) {
+    distanceModifier = 0.9; // Slightly prefer closer places
     reasons.push('강풍');
   }
 
   // Temperature extremes
   if (flags.hot_peak) {
     if (restaurant.tags.includes('cold') || restaurant.tags.includes('salad')) {
-      score += 0.3;
+      score += 0.2;
       reasons.push('최고↑');
     }
   }
 
   if (flags.cold_min) {
     if (restaurant.tags.includes('warm') || restaurant.tags.includes('soup')) {
-      score += 0.3;
+      score += 0.2;
       reasons.push('최저↓');
     }
   }
 
+  // Clamp to [-1, +1] then normalize to [0, 1]
+  const clampedScore = Math.max(-1, Math.min(1, score));
+  const normalizedScore = (clampedScore + 1) / 2;
+
   return {
-    score: Math.max(0, Math.min(1, score)),
-    reasons
+    score: normalizedScore,
+    reasons,
+    distanceModifier
   };
 }

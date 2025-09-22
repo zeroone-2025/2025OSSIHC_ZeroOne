@@ -1,29 +1,92 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ThumbsUp, ThumbsDown, MapPin, Settings, History } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, MapPin, Settings, History, Cloud, Thermometer, Wind } from 'lucide-react';
 import { Restaurant, RecommendationResult, WeatherSnapshot } from '../../lib/types';
 import { getRecommendations } from '../../lib/recommend';
 import { addVisit } from '../../lib/store';
-import { loadWeatherSnapshot } from '../../lib/weather';
+import { fetchLive, fetchUltra, fetchShort, mergeWeather, getCachedWeather, setCachedWeather } from '../../lib/weather';
 
 export default function HomePage() {
   const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [weather, setWeather] = useState<WeatherSnapshot | null>(null);
+  const [showWeatherToast, setShowWeatherToast] = useState(false);
 
   useEffect(() => {
     async function loadRecommendations() {
       try {
-        const [restaurantsRes, configRes, weather] = await Promise.all([
+        // Get user location
+        let lat = 37.5665; // Default: Seoul City Hall
+        let lng = 126.9780;
+
+        if ('geolocation' in navigator) {
+          try {
+            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                timeout: 5000,
+                enableHighAccuracy: false
+              });
+            });
+            lat = position.coords.latitude;
+            lng = position.coords.longitude;
+          } catch (geoError) {
+            console.warn('Geolocation failed, using default location:', geoError);
+          }
+        }
+
+        // Load data in parallel
+        const [restaurantsRes, configRes] = await Promise.all([
           fetch('/data/restaurants.json'),
-          fetch('/data/config.json'),
-          loadWeatherSnapshot()
+          fetch('/data/config.json')
         ]);
 
         const restaurants: Restaurant[] = await restaurantsRes.json();
         const config = await configRes.json();
-        const results = getRecommendations(restaurants, weather, config);
+
+        // Try to get real-time weather, fallback to cached/snapshot
+        let mergedWeather: WeatherSnapshot | null = null;
+
+        try {
+          const [live, ultra, short] = await Promise.all([
+            fetchLive(lat, lng).catch(() => null),
+            fetchUltra(lat, lng).catch(() => null),
+            fetchShort(lat, lng).catch(() => null)
+          ]);
+
+          if (live || ultra || short) {
+            mergedWeather = mergeWeather(live || undefined, ultra || undefined, short || undefined);
+            setCachedWeather(mergedWeather);
+          }
+        } catch (weatherError) {
+          console.warn('Real-time weather failed, trying fallbacks:', weatherError);
+        }
+
+        // Fallback to cached weather
+        if (!mergedWeather) {
+          mergedWeather = getCachedWeather();
+        }
+
+        // Final fallback to snapshot
+        if (!mergedWeather) {
+          try {
+            const snapshotRes = await fetch('/data/weather.snapshot.json');
+            mergedWeather = await snapshotRes.json();
+          } catch (snapshotError) {
+            console.warn('Weather snapshot fallback failed:', snapshotError);
+          }
+        }
+
+        setWeather(mergedWeather);
+
+        // Show toast for bad weather conditions
+        if (mergedWeather?.flags.wet || mergedWeather?.flags.windy) {
+          setShowWeatherToast(true);
+          setTimeout(() => setShowWeatherToast(false), 5000);
+        }
+
+        const results = getRecommendations(restaurants, mergedWeather || undefined, config);
         setRecommendations(results);
       } catch (error) {
         console.error('Failed to load recommendations:', error);
@@ -105,21 +168,53 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-200 z-10">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-800">점심 추천</h1>
-          <div className="flex gap-2">
-            <a href="/settings" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <Settings size={20} className="text-gray-600" />
-            </a>
-            <a href="/history" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <History size={20} className="text-gray-600" />
-            </a>
+        <div className="max-w-md mx-auto px-4 py-3">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-xl font-bold text-gray-800">점심 추천</h1>
+            <div className="flex gap-2">
+              <a href="/settings" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <Settings size={20} className="text-gray-600" />
+              </a>
+              <a href="/history" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <History size={20} className="text-gray-600" />
+              </a>
+            </div>
           </div>
+
+          {/* Weather mini badges */}
+          {weather && (
+            <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                <Thermometer size={12} />
+                <span>{Math.round(weather.T1H || weather.TMP || 15)}°C</span>
+              </div>
+              {(weather.RN1 || weather.PCP) && (
+                <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                  <Cloud size={12} />
+                  <span>{weather.RN1 || weather.PCP}mm</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                <Wind size={12} />
+                <span>{Math.round(weather.WSD || 1.5)}m/s</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Weather Toast */}
+      {showWeatherToast && (
+        <div className="fixed top-20 left-4 right-4 bg-orange-500 text-white px-4 py-3 rounded-xl shadow-lg z-20 max-w-md mx-auto">
+          <p className="text-sm text-center">
+            {weather?.flags.wet && weather?.flags.windy ? '비바람으로' :
+             weather?.flags.wet ? '비 예보로' : '강풍으로'} 가까운 곳을 우선 추천합니다
+          </p>
+        </div>
+      )}
+
       {/* Content */}
-      <div className="pt-20 pb-8 px-4">
+      <div className="pt-32 pb-8 px-4">
         <div className="max-w-md mx-auto">
           <div className="bg-white rounded-2xl shadow-md overflow-hidden">
             <div className="p-6">

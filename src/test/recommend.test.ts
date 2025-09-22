@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getRecommendations } from '../../lib/recommend';
-import { deriveFlags } from '../../lib/weather';
+import { deriveFlags, mergeWeather } from '../../lib/weather';
 import { Restaurant, WeatherSnapshot } from '../../lib/types';
 
 describe('getRecommendations', () => {
@@ -228,5 +228,117 @@ describe('deriveFlags', () => {
     const coldData = { TMN: 2, REH: 60, WSD: 1, PTY: 0 };
     const coldFlags = deriveFlags(coldData);
     expect(coldFlags.cold_min).toBe(true);
+  });
+});
+
+describe('mergeWeather', () => {
+  it('should prioritize live data over ultra and short', () => {
+    const live = {
+      source: 'live' as const,
+      tmfc: '2025-09-23T12:00:00Z',
+      T1H: 20,
+      REH: 65,
+      WSD: 2.0,
+      PTY: 0,
+      flags: { wet: false, feels_cold: false, muggy: false, windy: false, clear: true, hot_peak: false, cold_min: false }
+    };
+
+    const ultra = {
+      source: 'ultra' as const,
+      tmfc: '2025-09-23T12:00:00Z',
+      TMP: 18,
+      REH: 70,
+      WSD: 3.0,
+      SKY: 2,
+      PTY: 1,
+      flags: { wet: true, feels_cold: false, muggy: false, windy: false, clear: false, hot_peak: false, cold_min: false }
+    };
+
+    const merged = mergeWeather(live, ultra);
+
+    expect(merged.T1H).toBe(20); // From live
+    expect(merged.SKY).toBe(2); // From ultra (not in live)
+    expect(merged.source).toBe('live');
+  });
+
+  it('should use ultra data when live is unavailable', () => {
+    const ultra = {
+      source: 'ultra' as const,
+      tmfc: '2025-09-23T12:00:00Z',
+      TMP: 18,
+      REH: 70,
+      WSD: 3.0,
+      SKY: 2,
+      PTY: 1,
+      flags: { wet: true, feels_cold: false, muggy: false, windy: false, clear: false, hot_peak: false, cold_min: false }
+    };
+
+    const merged = mergeWeather(undefined, ultra);
+
+    expect(merged.T1H).toBe(18); // From ultra TMP
+    expect(merged.SKY).toBe(2);
+  });
+
+  it('should provide safe defaults when no data is available', () => {
+    const merged = mergeWeather();
+
+    expect(merged.T1H).toBe(15);
+    expect(merged.REH).toBe(60);
+    expect(merged.WSD).toBe(1.5);
+    expect(merged.flags.clear).toBe(true);
+  });
+});
+
+describe('weather scoring integration', () => {
+  it('should apply distance modifier for bad weather', () => {
+    const mockRestaurants = [
+      {
+        id: 'soup1',
+        name: 'Warm Soup Place',
+        lat: 37.5665,
+        lng: 126.9780,
+        category: 'korean' as const,
+        price_tier: 1 as const,
+        tags: ['warm', 'soup'],
+        allergens: [],
+        macros: { kcal: 400, protein: 20, fat: 10, carb: 50 },
+        season: ['autumn' as const]
+      },
+      {
+        id: 'salad1',
+        name: 'Cold Salad Place',
+        lat: 37.5665,
+        lng: 126.9780,
+        category: 'korean' as const,
+        price_tier: 1 as const,
+        tags: ['cold', 'salad'],
+        allergens: [],
+        macros: { kcal: 300, protein: 15, fat: 8, carb: 40 },
+        season: ['autumn' as const]
+      }
+    ];
+
+    const badWeather = {
+      source: 'live' as const,
+      tmfc: '2025-09-23T12:00:00Z',
+      T1H: 8,
+      REH: 85,
+      WSD: 2.5,
+      PTY: 1,
+      flags: { wet: true, feels_cold: true, muggy: false, windy: false, clear: false, hot_peak: false, cold_min: false }
+    };
+
+    const results = getRecommendations(mockRestaurants, badWeather);
+
+    // Soup place should score higher than salad place in bad weather
+    const soupResult = results.find(r => r.restaurant.tags.includes('soup'));
+    const saladResult = results.find(r => r.restaurant.tags.includes('salad'));
+
+    expect(soupResult).toBeDefined();
+    expect(saladResult).toBeDefined();
+
+    if (soupResult && saladResult) {
+      expect(soupResult.reason).toMatch(/비 예보|체감 추움/);
+    }
   });
 });

@@ -146,23 +146,166 @@ export function deriveFlags(data: any) {
   };
 }
 
-export async function fetchLive(): Promise<WeatherSnapshot> {
+export async function fetchLive(lat: number = 37.5665, lng: number = 126.9780): Promise<WeatherSnapshot> {
   const proxyBase = process.env.NEXT_PUBLIC_WEATHER_PROXY_BASE || '/api/weather';
-  const response = await fetch(`${proxyBase}/live`);
+  const url = `${proxyBase}/live?lat=${lat}&lng=${lng}`;
+  const response = await fetch(url);
   const data = await response.json();
-  return normalizeLive(data);
+
+  if (data.error) throw new Error(data.error);
+
+  return {
+    source: 'live',
+    tmfc: data.tmfc,
+    T1H: data.T1H,
+    REH: data.REH,
+    WSD: data.WSD,
+    PTY: data.PTY,
+    RN1: data.RN1,
+    flags: deriveFlags(data)
+  };
 }
 
-export async function fetchUltra(): Promise<WeatherSnapshot> {
+export async function fetchUltra(lat: number = 37.5665, lng: number = 126.9780): Promise<WeatherSnapshot> {
   const proxyBase = process.env.NEXT_PUBLIC_WEATHER_PROXY_BASE || '/api/weather';
-  const response = await fetch(`${proxyBase}/ultra`);
+  const url = `${proxyBase}/ultra?lat=${lat}&lng=${lng}`;
+  const response = await fetch(url);
   const data = await response.json();
-  return normalizeUltra(data);
+
+  if (data.error) throw new Error(data.error);
+
+  return {
+    source: 'ultra',
+    tmfc: data.tmfc,
+    TMP: data.TMP,
+    REH: data.REH,
+    WSD: data.WSD,
+    SKY: data.SKY,
+    PTY: data.PTY,
+    PCP: data.PCP,
+    flags: deriveFlags(data)
+  };
 }
 
-export async function fetchShort(): Promise<WeatherSnapshot> {
+export async function fetchShort(lat: number = 37.5665, lng: number = 126.9780): Promise<WeatherSnapshot> {
   const proxyBase = process.env.NEXT_PUBLIC_WEATHER_PROXY_BASE || '/api/weather';
-  const response = await fetch(`${proxyBase}/short`);
+  const url = `${proxyBase}/short?lat=${lat}&lng=${lng}`;
+  const response = await fetch(url);
   const data = await response.json();
-  return normalizeShort(data);
+
+  if (data.error) throw new Error(data.error);
+
+  return {
+    source: 'short',
+    tmfc: data.tmfc,
+    TMP: data.TMP,
+    REH: data.REH,
+    WSD: data.WSD,
+    SKY: data.SKY,
+    PTY: data.PTY,
+    POP: data.POP,
+    TMX: data.TMX,
+    TMN: data.TMN,
+    flags: deriveFlags(data)
+  };
+}
+
+export function mergeWeather(
+  live?: WeatherSnapshot,
+  ultra?: WeatherSnapshot,
+  short?: WeatherSnapshot
+): WeatherSnapshot {
+  const merged: any = {
+    source: 'live' as const,
+    tmfc: new Date().toISOString(),
+    T1H: 15,
+    REH: 60,
+    WSD: 1.5,
+    SKY: 1,
+    PTY: 0,
+    flags: {
+      wet: false,
+      feels_cold: false,
+      muggy: false,
+      windy: false,
+      clear: true,
+      hot_peak: false,
+      cold_min: false
+    }
+  };
+
+  // Priority: live > ultra > short
+  if (live) {
+    merged.source = 'live';
+    merged.tmfc = live.tmfc;
+    if (live.T1H !== undefined) merged.T1H = live.T1H;
+    if (live.REH !== undefined) merged.REH = live.REH;
+    if (live.WSD !== undefined) merged.WSD = live.WSD;
+    if (live.PTY !== undefined) merged.PTY = live.PTY;
+    if (live.RN1 !== undefined) merged.RN1 = live.RN1;
+  }
+
+  if (ultra) {
+    if (!live || !live.T1H) merged.T1H = ultra.TMP || merged.T1H;
+    if (!live || !live.REH) merged.REH = ultra.REH || merged.REH;
+    if (!live || !live.WSD) merged.WSD = ultra.WSD || merged.WSD;
+    if (ultra.SKY !== undefined) merged.SKY = ultra.SKY;
+    if (!live || !live.PTY) merged.PTY = ultra.PTY || merged.PTY;
+    if (ultra.PCP !== undefined) merged.PCP = ultra.PCP;
+  }
+
+  if (short) {
+    if (!live && !ultra) {
+      merged.T1H = short.TMP || merged.T1H;
+      merged.REH = short.REH || merged.REH;
+      merged.WSD = short.WSD || merged.WSD;
+      merged.PTY = short.PTY || merged.PTY;
+    }
+    if (!ultra?.SKY && short.SKY !== undefined) merged.SKY = short.SKY;
+    if (short.POP !== undefined) merged.POP = short.POP;
+    if (short.TMX !== undefined) merged.TMX = short.TMX;
+    if (short.TMN !== undefined) merged.TMN = short.TMN;
+  }
+
+  // Derive flags from merged data
+  merged.flags = deriveFlags(merged);
+
+  return merged as WeatherSnapshot;
+}
+
+const WEATHER_CACHE_KEY = 'lunch-app-last-weather';
+
+export function getCachedWeather(): WeatherSnapshot | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const cached = localStorage.getItem(WEATHER_CACHE_KEY);
+    if (!cached) return null;
+
+    const data = JSON.parse(cached);
+    const age = Date.now() - new Date(data.timestamp).getTime();
+
+    // Use cache if less than 30 minutes old
+    if (age < 30 * 60 * 1000) {
+      return data.weather;
+    }
+  } catch (error) {
+    console.warn('Failed to load cached weather:', error);
+  }
+
+  return null;
+}
+
+export function setCachedWeather(weather: WeatherSnapshot): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const cacheData = {
+      weather,
+      timestamp: new Date().toISOString()
+    };
+    localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(cacheData));
+  } catch (error) {
+    console.warn('Failed to cache weather:', error);
+  }
 }
