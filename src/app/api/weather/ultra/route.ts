@@ -1,89 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const WEATHER_AUTH_KEY = process.env.WEATHER_AUTH_KEY;
-const BASE_URL = 'http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
-
-interface GridCoord {
-  nx: number;
-  ny: number;
-}
-
-function coordToGrid(lat: number, lng: number): GridCoord {
-  const RE = 6371.00877;
-  const GRID = 5.0;
-  const SLAT1 = 30.0;
-  const SLAT2 = 60.0;
-  const OLON = 126.0;
-  const OLAT = 38.0;
-  const XO = 43;
-  const YO = 136;
-
-  const DEGRAD = Math.PI / 180.0;
-  const re = RE / GRID;
-  const slat1 = SLAT1 * DEGRAD;
-  const slat2 = SLAT2 * DEGRAD;
-  const olon = OLON * DEGRAD;
-  const olat = OLAT * DEGRAD;
-
-  let sn = Math.tan(Math.PI * 0.25 + slat2 * 0.5) / Math.tan(Math.PI * 0.25 + slat1 * 0.5);
-  sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(sn);
-  let sf = Math.tan(Math.PI * 0.25 + slat1 * 0.5);
-  sf = Math.pow(sf, sn) * Math.cos(slat1) / sn;
-  let ro = Math.tan(Math.PI * 0.25 + olat * 0.5);
-  ro = re * sf / Math.pow(ro, sn);
-
-  let ra = Math.tan(Math.PI * 0.25 + (lat) * DEGRAD * 0.5);
-  ra = re * sf / Math.pow(ra, sn);
-  let theta = lng * DEGRAD - olon;
-  if (theta > Math.PI) theta -= 2.0 * Math.PI;
-  if (theta < -Math.PI) theta += 2.0 * Math.PI;
-  theta *= sn;
-
-  const nx = Math.floor(ra * Math.sin(theta) + XO + 0.5);
-  const ny = Math.floor(ro - ra * Math.cos(theta) + YO + 0.5);
-
-  return { nx, ny };
-}
+import { coordToGrid, roundToUltraTime, createWeatherUrl, createCacheHeaders, createErrorResponse } from '../_utils';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const lat = parseFloat(searchParams.get('lat') || '37.5665');
   const lng = parseFloat(searchParams.get('lng') || '126.9780');
 
-  if (!WEATHER_AUTH_KEY) {
-    return NextResponse.json({ error: 'Weather API key not configured' }, { status: 500 });
-  }
+  const fallbackData = {
+    tmfc: new Date().toISOString(),
+    TMP: 15,
+    REH: 60,
+    WSD: 1.5,
+    SKY: 1,
+    PTY: 0,
+    PCP: 0
+  };
 
   try {
     const { nx, ny } = coordToGrid(lat, lng);
-    const now = new Date();
-    const baseDate = now.toISOString().slice(0, 10).replace(/-/g, '');
-    let baseTime = String(Math.floor(now.getHours() / 1) * 100).padStart(4, '0');
-    if (now.getMinutes() < 45) {
-      const prevHour = now.getHours() - 1;
-      baseTime = String(Math.max(0, prevHour) * 100).padStart(4, '0');
-    }
+    const { baseDate, baseTime } = roundToUltraTime(new Date());
+    const url = createWeatherUrl('getUltraSrtFcst', baseDate, baseTime, nx, ny, 60);
 
-    const url = new URL(`${BASE_URL}/getUltraSrtFcst`);
-    url.searchParams.set('serviceKey', WEATHER_AUTH_KEY);
-    url.searchParams.set('pageNo', '1');
-    url.searchParams.set('numOfRows', '60');
-    url.searchParams.set('dataType', 'JSON');
-    url.searchParams.set('base_date', baseDate);
-    url.searchParams.set('base_time', baseTime);
-    url.searchParams.set('nx', nx.toString());
-    url.searchParams.set('ny', ny.toString());
-
-    const response = await fetch(url.toString());
+    const response = await fetch(url);
     const data = await response.json();
 
     if (!data.response?.body?.items?.item) {
       throw new Error('Invalid API response');
     }
 
-    const items = data.response.body.items.item;
+    const items = Array.isArray(data.response.body.items.item)
+      ? data.response.body.items.item
+      : [data.response.body.items.item];
+
     const result: any = {
-      tmfc: now.toISOString(),
+      tmfc: new Date().toISOString(),
       TMP: 15,
       REH: 60,
       WSD: 1.5,
@@ -92,50 +42,65 @@ export async function GET(request: NextRequest) {
       PCP: 0
     };
 
-    const currentFcstTime = items.find((item: any) => {
+    // Get nearest forecast time items
+    const now = new Date();
+    const currentTime = now.toISOString().slice(0, 13).replace(/[-T]/g, '') + '00';
+
+    const nearestTime = items.find((item: any) => {
       const fcstTime = item.fcstDate + item.fcstTime;
-      const currentTime = now.toISOString().slice(0, 13).replace(/[-T]/g, '') + '00';
       return fcstTime >= currentTime;
     })?.fcstTime || items[0]?.fcstTime;
 
-    const currentItems = items.filter((item: any) => item.fcstTime === currentFcstTime);
+    const nearestItems = items.filter((item: any) => item.fcstTime === nearestTime);
 
-    currentItems.forEach((item: any) => {
-      const value = parseFloat(item.fcstValue) || 0;
-      switch (item.category) {
-        case 'TMP': result.TMP = value; break;
-        case 'REH': result.REH = value; break;
-        case 'WSD': result.WSD = value; break;
-        case 'SKY': result.SKY = parseInt(item.fcstValue) || 1; break;
-        case 'PTY': result.PTY = parseInt(item.fcstValue) || 0; break;
-        case 'PCP':
-          if (item.fcstValue !== '강수없음') {
-            result.PCP = value;
-          }
-          break;
+    // Calculate averages for next 0-3 hours
+    const categories = ['TMP', 'REH', 'WSD', 'SKY', 'PTY', 'PCP'];
+    const values: { [key: string]: number[] } = {};
+
+    categories.forEach(cat => values[cat] = []);
+
+    items.forEach((item: any) => {
+      const fcstTime = item.fcstDate + item.fcstTime;
+      const fcstHour = parseInt(item.fcstTime.slice(0, 2));
+      const currentHour = now.getHours();
+
+      // Include next 3 hours
+      if (fcstHour >= currentHour && fcstHour <= currentHour + 3) {
+        const value = parseFloat(item.fcstValue) || 0;
+
+        if (item.category === 'PCP' && item.fcstValue === '강수없음') {
+          values['PCP'].push(0);
+        } else if (values[item.category]) {
+          values[item.category].push(value);
+        }
+      }
+    });
+
+    // Calculate averages
+    categories.forEach(cat => {
+      if (values[cat].length > 0) {
+        if (cat === 'SKY' || cat === 'PTY') {
+          result[cat] = Math.round(values[cat].reduce((a, b) => a + b, 0) / values[cat].length);
+        } else {
+          result[cat] = values[cat].reduce((a, b) => a + b, 0) / values[cat].length;
+        }
       }
     });
 
     return NextResponse.json(result, {
-      headers: {
-        'Cache-Control': 's-maxage=300, stale-while-revalidate=600'
-      }
+      headers: createCacheHeaders(300)
     });
 
   } catch (error) {
-    console.error('Weather API error:', error);
-    return NextResponse.json({
-      tmfc: new Date().toISOString(),
-      TMP: 15,
-      REH: 60,
-      WSD: 1.5,
-      SKY: 1,
-      PTY: 0,
-      PCP: 0
-    }, {
-      headers: {
-        'Cache-Control': 's-maxage=60'
+    return new NextResponse(
+      createErrorResponse('Ultra weather API failed', fallbackData).body,
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          ...createCacheHeaders(60)
+        }
       }
-    });
+    );
   }
 }

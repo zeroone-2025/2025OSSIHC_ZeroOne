@@ -5,7 +5,7 @@ import { ThumbsUp, ThumbsDown, MapPin, Settings, History, Cloud, Thermometer, Wi
 import { Restaurant, RecommendationResult, WeatherSnapshot } from '../../lib/types';
 import { getRecommendations } from '../../lib/recommend';
 import { addVisit } from '../../lib/store';
-import { fetchLive, fetchUltra, fetchShort, mergeWeather, getCachedWeather, setCachedWeather } from '../../lib/weather';
+import { loadMergedWeather } from '../../lib/weather';
 
 export default function HomePage() {
   const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
@@ -45,48 +45,18 @@ export default function HomePage() {
         const restaurants: Restaurant[] = await restaurantsRes.json();
         const config = await configRes.json();
 
-        // Try to get real-time weather, fallback to cached/snapshot
-        let mergedWeather: WeatherSnapshot | null = null;
-
-        try {
-          const [live, ultra, short] = await Promise.all([
-            fetchLive(lat, lng).catch(() => null),
-            fetchUltra(lat, lng).catch(() => null),
-            fetchShort(lat, lng).catch(() => null)
-          ]);
-
-          if (live || ultra || short) {
-            mergedWeather = mergeWeather(live || undefined, ultra || undefined, short || undefined);
-            setCachedWeather(mergedWeather);
-          }
-        } catch (weatherError) {
-          console.warn('Real-time weather failed, trying fallbacks:', weatherError);
-        }
-
-        // Fallback to cached weather
-        if (!mergedWeather) {
-          mergedWeather = getCachedWeather();
-        }
-
-        // Final fallback to snapshot
-        if (!mergedWeather) {
-          try {
-            const snapshotRes = await fetch('/data/weather.snapshot.json');
-            mergedWeather = await snapshotRes.json();
-          } catch (snapshotError) {
-            console.warn('Weather snapshot fallback failed:', snapshotError);
-          }
-        }
+        // Load weather with complete fallback chain
+        const mergedWeather = await loadMergedWeather(lat, lng);
 
         setWeather(mergedWeather);
 
         // Show toast for bad weather conditions
-        if (mergedWeather?.flags.wet || mergedWeather?.flags.windy) {
+        if (mergedWeather.flags.wet || mergedWeather.flags.windy) {
           setShowWeatherToast(true);
           setTimeout(() => setShowWeatherToast(false), 5000);
         }
 
-        const results = getRecommendations(restaurants, mergedWeather || undefined, config);
+        const results = getRecommendations(restaurants, mergedWeather, config);
         setRecommendations(results);
       } catch (error) {
         console.error('Failed to load recommendations:', error);

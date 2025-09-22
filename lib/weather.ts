@@ -309,3 +309,47 @@ export function setCachedWeather(weather: WeatherSnapshot): void {
     console.warn('Failed to cache weather:', error);
   }
 }
+
+export async function loadMergedWeather(lat: number = 37.5665, lng: number = 126.9780): Promise<WeatherSnapshot> {
+  // Check cache first
+  const cached = getCachedWeather();
+  if (cached) {
+    return cached;
+  }
+
+  let live: WeatherSnapshot | undefined;
+  let ultra: WeatherSnapshot | undefined;
+  let short: WeatherSnapshot | undefined;
+
+  // Try to fetch all three in parallel
+  const promises = [
+    fetchLive(lat, lng).catch(() => undefined),
+    fetchUltra(lat, lng).catch(() => undefined),
+    fetchShort(lat, lng).catch(() => undefined)
+  ];
+
+  try {
+    [live, ultra, short] = await Promise.all(promises);
+  } catch (error) {
+    console.warn('Some weather APIs failed, using available data');
+  }
+
+  // If all APIs failed, try snapshot fallback
+  if (!live && !ultra && !short) {
+    try {
+      const snapshot = await loadWeatherSnapshot();
+      setCachedWeather(snapshot);
+      return snapshot;
+    } catch (error) {
+      console.warn('Snapshot also failed, using safe default');
+      const defaultWeather = getSafeWeatherDefault();
+      setCachedWeather(defaultWeather);
+      return defaultWeather;
+    }
+  }
+
+  // Merge available data
+  const merged = mergeWeather(live, ultra, short);
+  setCachedWeather(merged);
+  return merged;
+}
