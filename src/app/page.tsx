@@ -9,10 +9,14 @@ import { loadMergedWeather } from '../../lib/weather';
 
 export default function HomePage() {
   const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
+  const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
+  const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [weather, setWeather] = useState<WeatherSnapshot | null>(null);
   const [showWeatherToast, setShowWeatherToast] = useState(false);
+  const [question, setQuestion] = useState<{ qId: string; intent: string; question: string; options: string[] } | null>(null);
+  const [asking, setAsking] = useState(false);
 
   useEffect(() => {
     async function loadRecommendations() {
@@ -43,7 +47,9 @@ export default function HomePage() {
         ]);
 
         const restaurants: Restaurant[] = await restaurantsRes.json();
-        const config = await configRes.json();
+        const cfg = await configRes.json();
+        setAllRestaurants(restaurants);
+        setConfig(cfg);
 
         // Load weather with complete fallback chain
         const mergedWeather = await loadMergedWeather(lat, lng);
@@ -56,7 +62,7 @@ export default function HomePage() {
           setTimeout(() => setShowWeatherToast(false), 5000);
         }
 
-        const results = getRecommendations(restaurants, mergedWeather, config);
+        const results = getRecommendations(restaurants, mergedWeather, cfg);
         setRecommendations(results);
       } catch (error) {
         console.error('Failed to load recommendations:', error);
@@ -103,6 +109,65 @@ export default function HomePage() {
     window.open(kakaoUrl, '_blank');
   };
 
+  const askNextQuestion = async () => {
+    if (!weather || !allRestaurants.length) return;
+    setAsking(true);
+    try {
+      const topTags = recommendations.length ? recommendations[0].restaurant.tags.slice(0, 3) : allRestaurants[0].tags.slice(0, 3);
+      const activeFlags = Object.entries(weather.flags)
+        .filter(([, v]) => Boolean(v))
+        .map(([k]) => k);
+
+      const res = await fetch('/api/llm/next-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session: {
+            upperTags: topTags,
+            weatherFlags: activeFlags,
+            previousAnswers: []
+          },
+          remainingIntents: ['mood', 'craving', 'health', 'social', 'budget', 'time', 'adventure']
+        })
+      });
+      const data = await res.json();
+      setQuestion(data);
+    } catch (e) {
+      console.warn('질문 생성 실패:', e);
+      setQuestion({
+        qId: `fallback-${Date.now()}`,
+        intent: 'mood',
+        question: '오늘 점심 기분은 어떠신가요?',
+        options: ['든든하게', '가볍게', '빠르게', '새로운 메뉴']
+      });
+    } finally {
+      setAsking(false);
+    }
+  };
+
+  const applyAnswer = (option: string) => {
+    if (!allRestaurants.length) return;
+
+    let filtered = allRestaurants.slice();
+    const opt = option.toLowerCase();
+
+    // Simple heuristics to narrow candidates
+    if (opt.includes('가볍') || opt.includes('light') || opt.includes('salad')) {
+      filtered = filtered.filter(r => r.tags.includes('light') || r.tags.includes('salad') || r.macros.kcal < 450);
+    } else if (opt.includes('든든') || opt.includes('protein') || opt.includes('고기') || opt.includes('meat') || opt.includes('hearty')) {
+      filtered = filtered.filter(r => r.macros.protein > 20 || r.tags.includes('meat') || r.tags.includes('hearty'));
+    } else if (opt.includes('빠르') || opt.includes('quick') || opt.includes('fast')) {
+      filtered = filtered.filter(r => r.price_tier <= 2);
+    } else if (opt.includes('국') || opt.includes('따뜻') || opt.includes('soup') || opt.includes('warm')) {
+      filtered = filtered.filter(r => r.tags.includes('soup') || r.tags.includes('warm'));
+    }
+
+    const newRecs = getRecommendations(filtered.length ? filtered : allRestaurants, weather || undefined, config || undefined);
+    setRecommendations(newRecs);
+    setCurrentIndex(0);
+    setQuestion(null);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -139,17 +204,25 @@ export default function HomePage() {
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-200 z-10">
         <div className="max-w-md mx-auto px-4 py-3">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-xl font-bold text-gray-800">점심 추천</h1>
-            <div className="flex gap-2">
-              <a href="/settings" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <Settings size={20} className="text-gray-600" />
-              </a>
-              <a href="/history" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <History size={20} className="text-gray-600" />
-              </a>
+            <div className="flex items-center justify-between mb-2">
+              <h1 className="text-xl font-bold text-gray-800">점심 추천</h1>
+              <div className="flex gap-2">
+                <a href="/settings" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  <Settings size={20} className="text-gray-600" />
+                </a>
+                <a href="/history" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  <History size={20} className="text-gray-600" />
+                </a>
+                <button
+                  onClick={askNextQuestion}
+                  disabled={asking}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                  title="다음 질문"
+                >
+                  {asking ? '…' : 'Q'}
+                </button>
+              </div>
             </div>
-          </div>
 
           {/* Weather mini badges */}
           {weather && (
@@ -180,6 +253,29 @@ export default function HomePage() {
             {weather?.flags.wet && weather?.flags.windy ? '비바람으로' :
              weather?.flags.wet ? '비 예보로' : '강풍으로'} 가까운 곳을 우선 추천합니다
           </p>
+        </div>
+      )}
+
+      {/* Question panel */}
+      {question && (
+        <div className="fixed top-20 left-0 right-0 z-20">
+          <div className="max-w-md mx-auto px-4">
+            <div className="bg-white rounded-2xl shadow-md p-4 border border-blue-200">
+              <div className="text-sm text-gray-500 mb-1">다음 질문</div>
+              <div className="font-semibold text-gray-800 mb-3">{question.question}</div>
+              <div className="grid grid-cols-2 gap-2">
+                {question.options.slice(0,4).map((opt, i) => (
+                  <button
+                    key={i}
+                    onClick={() => applyAnswer(opt)}
+                    className="text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-xl"
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

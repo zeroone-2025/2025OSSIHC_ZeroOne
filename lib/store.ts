@@ -1,7 +1,7 @@
 import { Pref, Visit } from './types';
 
-const PREF_KEY = 'lunch-app-preferences';
-const VISITS_KEY = 'lunch-app-visits';
+const PREF_KEY = 'pref';
+const VISITS_KEY = 'visits';
 
 const defaultPreferences: Pref = {
   mode: 'light',
