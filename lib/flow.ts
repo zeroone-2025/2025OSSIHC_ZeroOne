@@ -4,6 +4,15 @@ import { getRecommendations } from './recommend'
 import { getNextQuestion, MissingOperatorKeyError, NextQuestion } from './llm'
 import type { Event, SessionState } from './state'
 import type { Restaurant, WeatherSnapshot, RecommendationResult } from './types'
+import { forbidFromAllergy, parseCategoryPath, tagsFromCategory } from '../src/lib/category'
+
+const CATEGORY_FALLBACKS: Record<Restaurant['category'], string> = {
+  korean: '음식점 > 한식',
+  japanese: '음식점 > 일식',
+  chinese: '음식점 > 중식',
+  vietnamese: '음식점 > 아시아음식 > 베트남음식',
+  indian: '음식점 > 아시아음식 > 인도음식',
+}
 
 export async function boot(
   dispatch: (event: Event) => void
@@ -106,6 +115,9 @@ function applyHardFilters(
     if (recent.has(restaurant.id)) return false
     if (restaurant.allergens.some((allergen) => prefs.allergies.includes(allergen))) return false
 
+    const menuTags = deriveMenuTags(restaurant)
+    if (forbidFromAllergy(prefs, menuTags)) return false
+
     if (user) {
       const distance = haversine(user.lat, user.lng, restaurant.lat, restaurant.lng)
       if (distance > radiusMeters) return false
@@ -113,6 +125,25 @@ function applyHardFilters(
 
     return true
   })
+}
+
+function deriveMenuTags(restaurant: Restaurant): string[] {
+  const declared = typeof restaurant.category_name === 'string' ? restaurant.category_name : ''
+  const explicitLevels = parseCategoryPath(declared).levels
+  const fallbackLevels = explicitLevels.length
+    ? explicitLevels
+    : parseCategoryPath(CATEGORY_FALLBACKS[restaurant.category] ?? '').levels
+
+  const mapping = tagsFromCategory(fallbackLevels)
+  if (mapping.tags.length) {
+    return mapping.tags
+  }
+
+  if (Array.isArray(restaurant.tags) && restaurant.tags.length) {
+    return Array.from(new Set(restaurant.tags.map((tag) => tag.toLowerCase())))
+  }
+
+  return []
 }
 
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {

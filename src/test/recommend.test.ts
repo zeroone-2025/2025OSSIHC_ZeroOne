@@ -94,6 +94,30 @@ describe('getRecommendations', () => {
     });
   });
 
+  it('adds category-based tags and badges for leaf matches', () => {
+    const mockRestaurants: Restaurant[] = [
+      {
+        id: 'leaf1',
+        name: '서울 국밥',
+        lat: 37.5665,
+        lng: 126.9780,
+        category: 'korean',
+        category_name: '음식점 > 한식 > 국밥',
+        price_tier: 1,
+        tags: [],
+        allergens: [],
+        macros: { kcal: 480, protein: 24, fat: 12, carb: 62 },
+        season: ['winter']
+      }
+    ];
+
+    const results = getRecommendations(mockRestaurants);
+    expect(results.length).toBe(1);
+    const [result] = results;
+    expect(result.restaurant.menuTags).toContain('soup');
+    expect(result.reason).toContain('업종 기반');
+  });
+
   it('should include weather tokens in reason when weather is provided', () => {
     const mockRestaurants: Restaurant[] = [
       {

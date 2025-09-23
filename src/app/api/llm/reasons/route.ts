@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { hasOpenAIKey } from '@/lib/env'
 import { chatJson } from '@/lib/openai'
+import { isValidReasons } from '@/lib/validators'
 
 interface ReasonRequest {
   restaurant: {
@@ -10,6 +11,9 @@ interface ReasonRequest {
     tags: string[]
     price_tier?: number
     macros?: Record<string, number>
+    menuTags?: string[]
+    categoryName?: string | null
+    categoryStrength?: string | null
   }
   highlights: string[]
   context: {
@@ -17,6 +21,7 @@ interface ReasonRequest {
     answers: { intent: string; option: string }[]
     etaMins?: number
     freeTimeMins?: number | null
+    menuTags?: string[]
   }
 }
 
@@ -33,13 +38,13 @@ interface ReasonResponse {
 const SYSTEM_PROMPT = `역할: 점심 추천 근거 생성기.
 
 규칙:
-- 입력 JSON만 사용. 추측/창작/미확인 정보 금지.
-- 뻔한 상식(예: "추워서 국물")만으로 된 근거 금지. 기여도가 높은 다른 요소와 결합.
-- 상위 기여도 2~3개의 근거로 구성.
-- 각 근거는 18자 이내의 배지(badge) + 1문장 설명(detail) + source 키(예: weather, profile, answer 등).
-- 설명은 한국어, 간결하지만 구체적으로 작성.
-- 금지: 평점 언급, 리뷰 인용, 영업/혼잡 단정, 과장된 수식.
-- 출력은 JSON 한 줄. 스키마: {"reasons":[{"badge":"","detail":"","source":""}, ...]}`;
+* 입력 JSON만 사용. 추측·발명 금지. 외부 지식 사용 금지.
+* 뻔한 상식 단독 금지. 최소 2가지 근거 결합(개인 기록/집단 트렌드/시간·거리/영양/알레르기/신규성/업종).
+* 상위 기여도 순 2~3개. 각 근거 18자 배지 + 1문장 설명(한국어, 구체적 수치/조건).
+* 금지: 평점·리뷰 생성, 영업여부 단정, 과장어.
+
+출력 스키마(JSON only):
+{"reasons":[{"badge":"...","detail":"...","source":"weather|eta|novelty|history|trend|allergy|nutrition|group|situation|pref|category"}]}`;
 
 export async function POST(request: NextRequest) {
   if (!hasOpenAIKey()) {
@@ -51,9 +56,21 @@ export async function POST(request: NextRequest) {
     validateRequest(body)
 
     const payload = {
-      restaurant: body.restaurant,
-      highlights: body.highlights,
-      context: body.context,
+      restaurant: {
+        ...body.restaurant,
+        menuTags: Array.isArray(body.restaurant?.menuTags)
+          ? body.restaurant.menuTags.filter((tag: unknown) => typeof tag === 'string').slice(0, 12)
+          : [],
+      },
+      highlights: Array.isArray(body.highlights)
+        ? body.highlights.filter((item: unknown) => typeof item === 'string').slice(0, 5)
+        : [],
+      context: {
+        ...body.context,
+        menuTags: Array.isArray(body.context?.menuTags)
+          ? body.context.menuTags.filter((tag: unknown) => typeof tag === 'string').slice(0, 12)
+          : [],
+      },
     }
 
     const result = await chatJson(
@@ -64,7 +81,9 @@ export async function POST(request: NextRequest) {
       { maxTokens: 500 }
     )
 
-    validateResponse(result)
+    if (!isValidReasons(result)) {
+      throw new Error('INVALID_OPENAI_JSON')
+    }
 
     const normalized: ReasonResponse = {
       reasons: result.reasons.slice(0, 3).map((reason: ReasonDetail) => ({
@@ -107,32 +126,19 @@ function validateRequest(candidate: unknown): asserts candidate is ReasonRequest
     throw new Error('INVALID_REQUEST')
   }
 
-  if (!Array.isArray(value.highlights) || value.highlights.length === 0) {
+  if (restaurant.menuTags !== undefined && !Array.isArray(restaurant.menuTags)) {
+    throw new Error('INVALID_REQUEST')
+  }
+
+  if (!Array.isArray(value.highlights)) {
     throw new Error('INVALID_REQUEST')
   }
 
   if (!context || !Array.isArray(context.weatherFlags) || !Array.isArray(context.answers)) {
     throw new Error('INVALID_REQUEST')
   }
-}
 
-function validateResponse(candidate: unknown): asserts candidate is ReasonResponse {
-  if (!candidate || typeof candidate !== 'object') {
-    throw new Error('INVALID_OPENAI_JSON')
-  }
-
-  const value = candidate as Record<string, unknown>
-  if (!Array.isArray(value.reasons) || value.reasons.length === 0) {
-    throw new Error('INVALID_OPENAI_JSON')
-  }
-
-  for (const reason of value.reasons) {
-    if (!reason || typeof reason !== 'object') {
-      throw new Error('INVALID_OPENAI_JSON')
-    }
-    const item = reason as Record<string, unknown>
-    if (typeof item.badge !== 'string' || typeof item.detail !== 'string') {
-      throw new Error('INVALID_OPENAI_JSON')
-    }
+  if (context.menuTags !== undefined && !Array.isArray(context.menuTags)) {
+    throw new Error('INVALID_REQUEST')
   }
 }

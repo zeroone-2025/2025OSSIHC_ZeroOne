@@ -146,6 +146,9 @@ export default function HomePage(): JSX.Element {
               name: target.restaurant.name,
               category: target.restaurant.category,
               tags: target.restaurant.tags,
+              menuTags: target.restaurant.menuTags ?? [],
+              categoryName: target.restaurant.category_name ?? null,
+              categoryStrength: target.restaurant.categoryStrength ?? null,
               price_tier: target.restaurant.price_tier,
               macros: target.restaurant.macros,
             },
@@ -155,6 +158,7 @@ export default function HomePage(): JSX.Element {
               answers: state.answers.map(({ intent, option }) => ({ intent, option })),
               etaMins: target.etaMins,
               freeTimeMins: state.freeTimeMins ?? null,
+              menuTags: target.restaurant.menuTags ?? [],
             },
           }),
         })
@@ -452,6 +456,15 @@ export default function HomePage(): JSX.Element {
               </div>
             ))}
           </div>
+
+          {currentRecommendation.restaurant.categoryStrength === 'leaf' &&
+            (currentRecommendation.restaurant.menuTags?.length ?? 0) > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                  업종 기반
+                </span>
+              </div>
+            )}
 
           <div className="mt-4 space-y-2 rounded-2xl bg-gray-50 p-4 text-sm text-gray-700">
             <div className="flex justify-between">

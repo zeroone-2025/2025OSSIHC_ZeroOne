@@ -15,6 +15,10 @@ export interface Restaurant {
   };
   season: ('spring' | 'summer' | 'autumn' | 'winter')[];
   etaMins?: number;
+  category_name?: string;
+  categoryLevels?: string[];
+  categoryStrength?: 'leaf' | 'mid' | 'none';
+  menuTags?: string[];
 }
 
 export interface Pref {
