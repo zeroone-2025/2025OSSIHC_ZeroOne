@@ -15,6 +15,12 @@ interface ToastState {
   tone: 'info' | 'warning' | 'error'
 }
 
+interface LLMReason {
+  badge: string
+  detail: string
+  source: string
+}
+
 const touchButtonClass = 'rounded-2xl px-4 py-4 text-base font-semibold shadow-sm transition-all duration-150 active:scale-95'
 
 export default function HomePage(): JSX.Element {
@@ -29,8 +35,11 @@ export default function HomePage(): JSX.Element {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<ToastState | null>(null)
   const [bootError, setBootError] = useState<string | null>(null)
+  const [llmUnavailable, setLlmUnavailable] = useState(false)
+  const [reasonsByRestaurant, setReasonsByRestaurant] = useState<Record<string, LLMReason[]>>({})
 
   const bootedRef = useRef(false)
+  const reasonsInFlight = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     persistSession(state)
@@ -89,12 +98,14 @@ export default function HomePage(): JSX.Element {
       .then((next) => {
         if (!active) return
         setQuestion(next)
+        setLlmUnavailable(false)
       })
       .catch((error) => {
         if (!active) return
         if (error instanceof MissingOperatorKeyError) {
           setToast({ message: '질문 생성을 위한 OPENAI_API_KEY가 필요합니다.', tone: 'error' })
           setBootError('OPENAI 키가 설정되지 않았습니다.')
+          setLlmUnavailable(true)
         } else if (error instanceof Error && error.message.includes('질문할 인텐트')) {
           dispatch({ type: 'QNA_DONE' })
           setQuestion(null)
@@ -113,6 +124,98 @@ export default function HomePage(): JSX.Element {
   }, [state, asking, question])
 
   const currentRecommendation = recommendations[0] ?? null
+
+  const fetchReasons = useCallback(
+    async (target: RecommendationResult) => {
+      try {
+        if (reasonsInFlight.current.has(target.restaurant.id)) {
+          return
+        }
+        reasonsInFlight.current.add(target.restaurant.id)
+
+        const activeWeatherFlags = Object.entries(state.weather?.flags ?? {})
+          .filter(([, active]) => Boolean(active))
+          .map(([flag]) => flag)
+
+        const response = await fetch('/api/llm/reasons', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            restaurant: {
+              id: target.restaurant.id,
+              name: target.restaurant.name,
+              category: target.restaurant.category,
+              tags: target.restaurant.tags,
+              price_tier: target.restaurant.price_tier,
+              macros: target.restaurant.macros,
+            },
+            highlights: target.reason.split(' · ').filter(Boolean),
+            context: {
+              weatherFlags: activeWeatherFlags,
+              answers: state.answers.map(({ intent, option }) => ({ intent, option })),
+              etaMins: target.etaMins,
+              freeTimeMins: state.freeTimeMins ?? null,
+            },
+          }),
+        })
+
+        if (response.status === 503) {
+          setLlmUnavailable(true)
+          throw new Error('NO_OPENAI_KEY')
+        }
+
+        if (!response.ok) {
+          throw new Error(`reasons request failed: ${response.status}`)
+        }
+
+        const data = await response.json()
+        if (!Array.isArray(data.reasons)) {
+          throw new Error('invalid reasons payload')
+        }
+
+        setReasonsByRestaurant((prev) => ({
+          ...prev,
+          [target.restaurant.id]: data.reasons as LLMReason[],
+        }))
+        setLlmUnavailable(false)
+      } catch (error) {
+        setReasonsByRestaurant((prev) => ({
+          ...prev,
+          [target.restaurant.id]: [
+            {
+              badge: '근거 생성 실패',
+              detail: 'LLM 근거를 불러오지 못했습니다.',
+              source: 'system',
+            },
+          ],
+        }))
+
+        if (error instanceof Error && error.message !== 'NO_OPENAI_KEY') {
+          console.warn('Failed to load reasons:', error)
+        }
+      } finally {
+        reasonsInFlight.current.delete(target.restaurant.id)
+      }
+    },
+    [state.answers, state.freeTimeMins, state.weather]
+  )
+
+  useEffect(() => {
+    if (!currentRecommendation) return
+    if (reasonsByRestaurant[currentRecommendation.restaurant.id]) return
+    fetchReasons(currentRecommendation)
+  }, [currentRecommendation, fetchReasons, reasonsByRestaurant])
+
+  const displayReasons: LLMReason[] = useMemo(() => {
+    if (!currentRecommendation) return []
+    return (
+      reasonsByRestaurant[currentRecommendation.restaurant.id] ||
+      currentRecommendation.reason
+        .split(' · ')
+        .filter(Boolean)
+        .map((token) => ({ badge: token, detail: '', source: 'local' }))
+    )
+  }, [currentRecommendation, reasonsByRestaurant])
 
   const weatherBadges = useMemo(() => {
     const target = state.weather
@@ -134,6 +237,9 @@ export default function HomePage(): JSX.Element {
     setQuestion(null)
     setToast({ message: '세션을 초기화했어요.', tone: 'info' })
     bootedRef.current = false
+    setReasonsByRestaurant({})
+    setLlmUnavailable(false)
+    reasonsInFlight.current.clear()
   }, [])
 
   const handleAnswer = useCallback(async (answer: string) => {
@@ -166,9 +272,11 @@ export default function HomePage(): JSX.Element {
     try {
       const nextQuestion = await askNext({ ...simulatedState, pool: updatedPool })
       setQuestion(nextQuestion)
+      setLlmUnavailable(false)
     } catch (error) {
       if (error instanceof MissingOperatorKeyError) {
         setToast({ message: 'OPENAI 키가 없어서 추가 질문을 할 수 없습니다.', tone: 'warning' })
+        setLlmUnavailable(true)
       } else if (error instanceof Error && error.message.includes('질문할 인텐트')) {
         dispatch({ type: 'QNA_DONE' })
       }
@@ -177,6 +285,13 @@ export default function HomePage(): JSX.Element {
 
   const removeActiveRecommendation = useCallback((reason?: 'like' | 'skip') => {
     setRecommendations((prev) => prev.slice(1))
+    if (currentRecommendation) {
+      setReasonsByRestaurant((prev) => {
+        const next = { ...prev }
+        delete next[currentRecommendation.restaurant.id]
+        return next
+      })
+    }
     if (state.pool.length > 1) {
       const reducedPool = state.pool.slice(1)
       dispatch({ type: 'RECOMMEND_READY', pool: reducedPool })
@@ -188,26 +303,34 @@ export default function HomePage(): JSX.Element {
 
   const handleLike = useCallback(() => {
     if (!currentRecommendation) return
+    const reasonSources = displayReasons
+      .map((item) => item.source)
+      .filter((source) => source && source !== 'local')
+      .join(',')
     addVisit({
       restaurantId: currentRecommendation.restaurant.id,
       timestamp: Date.now(),
       liked: true,
-      reason: currentRecommendation.reason,
+      reason: reasonSources || currentRecommendation.reason,
     })
     scheduleReview(currentRecommendation.restaurant.id)
     removeActiveRecommendation('like')
-  }, [currentRecommendation, removeActiveRecommendation])
+  }, [currentRecommendation, displayReasons, removeActiveRecommendation])
 
   const handleDislike = useCallback(() => {
     if (!currentRecommendation) return
+    const reasonSources = displayReasons
+      .map((item) => item.source)
+      .filter((source) => source && source !== 'local')
+      .join(',')
     addVisit({
       restaurantId: currentRecommendation.restaurant.id,
       timestamp: Date.now(),
       liked: false,
-      reason: currentRecommendation.reason,
+      reason: reasonSources || currentRecommendation.reason,
     })
     removeActiveRecommendation('skip')
-  }, [currentRecommendation, removeActiveRecommendation])
+  }, [currentRecommendation, displayReasons, removeActiveRecommendation])
 
   const openMap = useCallback(() => {
     if (!currentRecommendation) return
@@ -247,6 +370,12 @@ export default function HomePage(): JSX.Element {
           )}
         </div>
       </header>
+
+      {llmUnavailable && (
+        <div className="mx-4 mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          운영자: OPENAI_API_KEY 설정이 필요합니다.
+        </div>
+      )}
 
       {toast && (
         <div
@@ -309,11 +438,18 @@ export default function HomePage(): JSX.Element {
             </span>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            {currentRecommendation.reason.split(' · ').map((token) => (
-              <span key={token} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-                {token}
-              </span>
+          <div className="mt-3 space-y-3">
+            {displayReasons.map((reason) => (
+              <div
+                key={`${reason.badge}-${reason.source}`}
+                className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3"
+              >
+                <div className="text-xs font-semibold text-blue-700">{reason.badge}</div>
+                {reason.detail && <p className="mt-1 text-xs text-blue-900">{reason.detail}</p>}
+                {reason.source && reason.source !== 'local' && (
+                  <div className="mt-2 text-[10px] uppercase tracking-wide text-blue-400">{reason.source}</div>
+                )}
+              </div>
             ))}
           </div>
 

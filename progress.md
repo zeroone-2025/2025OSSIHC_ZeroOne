@@ -14,3 +14,4 @@ Day2 기능 점검 완료
 
 [2025-09-23 04:15] Day2-통합: LLM intent(time_pressure/distance_tradeoff) 추가, recommend에 ETA 보강(거리 항 통합), Kakao Places에 etaMins 주입, 카드에 ETA 토큰 표기. 별도 화면·로직 분리 없이 기존 플로우에 자연 결합
 [2025-09-23 16:45] 세션 초기화·모바일 내비·프로필 개편 및 키 검증 강화 작업 완료
+[2025-09-23 17:29] LLM readiness: env 가드/클라이언트 일원화, next-question+reasons API, 시스템 프롬프트, 헬스/스모크, UI 배너·근거 폴백 구축

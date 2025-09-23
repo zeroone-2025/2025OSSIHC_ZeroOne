@@ -17,8 +17,6 @@ const DEFAULT_INTENTS = [
   'spice_tolerance',
 ]
 
-const hasOpenAiKey = process.env.HAS_OPENAI_KEY === 'true'
-
 export class MissingOperatorKeyError extends Error {
   constructor(message: string) {
     super(message)
@@ -30,10 +28,6 @@ export async function getNextQuestion(
   state: SessionState,
   opts: { signal?: AbortSignal; intents?: string[] } = {}
 ): Promise<NextQuestion> {
-  if (!hasOpenAiKey) {
-    throw new MissingOperatorKeyError('OPENAI_API_KEY가 설정되어 있지 않습니다.')
-  }
-
   const intents = opts.intents ?? DEFAULT_INTENTS
   const remainingIntents = intents.filter((intent) => !state.answers.some((answer) => answer.intent === intent))
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+import { hasOpenAIKey } from '@/lib/env';
+import { chatJson } from '@/lib/openai';
 
 interface QuestionRequest {
   session: {
@@ -11,98 +11,109 @@ interface QuestionRequest {
   remainingIntents: string[];
 }
 
-const SYSTEM_PROMPT = `역할: 점심 추천을 위한 인터뷰어.
+interface QuestionResponse {
+  qId: string;
+  intent: string;
+  question: string;
+  options: string[];
+}
 
-반드시 지킬 것:
-1. remainingIntents 배열의 첫 요소 intent로 질문.
-2. 한국어 질문 1개와 4~5개의 짧은 선택지를 생성.
-3. 메뉴 추천, 다중 질문, 영어 혼용 금지.
-4. 출력은 JSON 한 줄: {"qId":"q-타임스탬프","intent":"intent","question":"질문","options":["옵션1",...]}
-5. options는 사용자 답변 수집용으로, 중복/공백 금지.`;
+const SYSTEM_PROMPT = `역할: 점심 추천 질문 생성기.
+
+규칙:
+1. remainingIntents 배열의 첫 번째 요소 intent로 지정.
+2. 질문은 한국어 1문항(두 문장 금지).
+3. 보기 4~5개, 짧고 구체적으로 작성.
+4. 메뉴 추천, 광고성 문구, 다중 질문, 영어 혼용 금지.
+5. 출력은 JSON 한 줄: {"qId":"q-타임스탬프","intent":"intent","question":"질문","options":[...]}`;
 
 export async function POST(request: NextRequest) {
-  if (!OPENAI_API_KEY) {
-    return NextResponse.json(
-      { error: 'NO_OPENAI_KEY' },
-      { status: 503 }
-    );
+  if (!hasOpenAIKey()) {
+    return NextResponse.json({ error: 'NO_OPENAI_KEY' }, { status: 503 })
   }
 
   try {
-    const body: QuestionRequest = await request.json();
+    const body = await request.json()
+    validateRequest(body)
 
-    const userPrompt = `remainingIntents: ${body.remainingIntents.join(',')}
-topTags: ${body.session.upperTags.join(',')}
-weatherFlags: ${body.session.weatherFlags.join(',')}
-answerHistory: ${body.session.previousAnswers.join(',')}`;
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
+    const userPayload = {
+      remainingIntents: body.remainingIntents,
+      session: {
+        upperTags: body.session.upperTags,
+        weatherFlags: body.session.weatherFlags,
+        previousAnswers: body.session.previousAnswers,
       },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userPrompt }
-        ],
-        max_tokens: 200,
-        temperature: 0.2,
-        response_format: { type: 'json_object' }
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content?.trim();
+    const data = await chatJson(
+      [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: JSON.stringify(userPayload) },
+      ],
+      { maxTokens: 350 }
+    )
 
-    if (!content) {
-      throw new Error('Empty response from OpenAI');
+    validateResponse(data)
+
+    const sanitized: QuestionResponse = {
+      qId: String(data.qId),
+      intent: String(data.intent),
+      question: String(data.question),
+      options: data.options.slice(0, 5).map((option: unknown) => String(option).trim()).filter(Boolean),
     }
 
-    // Try to parse JSON response
-    try {
-      const questionData = JSON.parse(content);
-
-      // Validate required fields
-      if (!questionData.qId || !questionData.intent || !questionData.question || !Array.isArray(questionData.options)) {
-        throw new Error('Invalid question format');
-      }
-
-      // Sanitize to only required fields
-      const sanitized = {
-        qId: String(questionData.qId),
-        intent: String(questionData.intent),
-        question: String(questionData.question),
-        options: Array.isArray(questionData.options) ? questionData.options.slice(0, 6).map((o: any) => String(o)) : [],
-      };
-      return NextResponse.json(sanitized, {
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate'
-        }
-      });
-
-    } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', parseError);
-      throw new Error('Invalid JSON from OpenAI');
-    }
-
+    return NextResponse.json(sanitized, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
+    })
   } catch (error) {
-    console.error('LLM question generation failed:', error);
-    const message = error instanceof Error ? error.message : 'LLM 질문 생성 실패';
+    if ((error as Error).message === 'NO_OPENAI_KEY') {
+      return NextResponse.json({ error: 'NO_OPENAI_KEY' }, { status: 503 })
+    }
+
+    console.error('LLM question generation failed:', error)
+    const message = error instanceof Error ? error.message : 'LLM 질문 생성 실패'
     return NextResponse.json(
       { error: message },
       {
         status: 500,
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate'
-        }
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
       }
-    );
+    )
+  }
+}
+
+function validateRequest(candidate: unknown): asserts candidate is QuestionRequest {
+  if (!candidate || typeof candidate !== 'object') {
+    throw new Error('INVALID_REQUEST')
+  }
+
+  const value = candidate as Record<string, unknown>
+  const session = value.session as Record<string, unknown> | undefined
+  if (!Array.isArray(value.remainingIntents) || value.remainingIntents.length === 0) {
+    throw new Error('INVALID_REQUEST')
+  }
+  if (!session) {
+    throw new Error('INVALID_REQUEST')
+  }
+  if (!Array.isArray(session.upperTags) || !Array.isArray(session.weatherFlags) || !Array.isArray(session.previousAnswers)) {
+    throw new Error('INVALID_REQUEST')
+  }
+}
+
+function validateResponse(payload: any): asserts payload is QuestionResponse {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('INVALID_OPENAI_JSON')
+  }
+
+  if (typeof payload.qId !== 'string' || typeof payload.intent !== 'string' || typeof payload.question !== 'string') {
+    throw new Error('INVALID_OPENAI_JSON')
+  }
+
+  if (!Array.isArray(payload.options) || payload.options.length === 0) {
+    throw new Error('INVALID_OPENAI_JSON')
   }
 }
