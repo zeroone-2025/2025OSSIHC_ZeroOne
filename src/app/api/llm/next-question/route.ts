@@ -18,33 +18,24 @@ interface QuestionResponse {
   options: string[];
 }
 
-const SYSTEM_PROMPT = `당신은 점심 메뉴 추천을 위한 적응형 질문 생성 AI입니다.
+const SYSTEM_PROMPT = `넌 점심 추천 인터뷰어. intent 목록 중 하나를 골라 한국어 질문 한 개를 생성. 출력은 JSON 한 줄.
 
-사용자 세션과 남은 의도 목록을 받아 "단 한 문항"의 질문을 생성하세요.
+intents(고정): meal_feel, time_pressure, spice_tolerance, group_dyn, diet_focus, indoor_outdoor, distance_tradeoff
 
 규칙:
-1. 남은 의도(remainingIntents) 중 가장 우선순위가 높은 하나를 선택
-2. 사용자의 이전 답변과 현재 날씨를 고려해 개인화된 질문 작성
-3. 4개의 선택지 제공 (명확하고 구체적으로)
-4. JSON 형식으로만 응답: {"qId":"unique-id","intent":"selected-intent","question":"질문 내용","options":["선택지1","선택지2","선택지3","선택지4"]}
+1. remainingIntents 중 첫 번째 선택
+2. 질문 1개, 선택지 4개 (간결)
+3. 금지: 다문항/장문/메뉴 추천
+4. 출력: JSON만
 
-의도 우선순위:
-- mood: 기분/상황에 따른 선호
-- craving: 특정 맛/음식 욕구
-- health: 건강/영양 고려사항
-- social: 혼밥/단체식사 상황
-- budget: 가격대 선호
-- time: 식사 시간 여유도
-- adventure: 새로운 시도 의향
-
-응답은 반드시 JSON만 출력하세요.`;
+형식: {"qId":"q-타임스탬프","intent":"선택된intent","question":"질문내용?","options":["옵션1","옵션2","옵션3","옵션4"]}`;
 
 function generateFallbackQuestion(): QuestionResponse {
   return {
     qId: `fallback-${Date.now()}`,
-    intent: 'mood',
-    question: '오늘 점심 기분은 어떠신가요?',
-    options: ['든든하게 먹고 싶어요', '가볍게 먹고 싶어요', '특별한 걸 먹고 싶어요', '빠르게 해결하고 싶어요']
+    intent: 'meal_feel',
+    question: '오늘 점심은 어떤 느낌으로 드시고 싶으세요?',
+    options: ['든든하게', '가볍게', '빠르게', '새로운 맛']
   };
 }
 
@@ -59,14 +50,10 @@ export async function POST(request: NextRequest) {
   try {
     const body: QuestionRequest = await request.json();
 
-    const userPrompt = `세션 정보:
-- 상위 태그: ${body.session.upperTags.join(', ')}
-- 날씨 플래그: ${body.session.weatherFlags.join(', ')}
-- 이전 답변: ${body.session.previousAnswers.join(', ')}
-
-남은 의도: ${body.remainingIntents.join(', ')}
-
-위 정보를 바탕으로 적절한 질문을 생성하세요.`;
+    const userPrompt = `remainingIntents: ${body.remainingIntents.join(',')}
+topTags: ${body.session.upperTags.join(',')}
+weatherFlags: ${body.session.weatherFlags.join(',')}
+answerHistory: ${body.session.previousAnswers.join(',')}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -80,8 +67,9 @@ export async function POST(request: NextRequest) {
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }
         ],
-        max_tokens: 300,
-        temperature: 0.7,
+        max_tokens: 200,
+        temperature: 0.3,
+        response_format: { type: 'json_object' }
       }),
     });
 

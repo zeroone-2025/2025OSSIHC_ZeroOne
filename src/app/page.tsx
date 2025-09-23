@@ -127,7 +127,7 @@ export default function HomePage() {
             weatherFlags: activeFlags,
             previousAnswers: []
           },
-          remainingIntents: ['mood', 'craving', 'health', 'social', 'budget', 'time', 'adventure']
+          remainingIntents: ['meal_feel', 'time_pressure', 'spice_tolerance', 'group_dyn', 'diet_focus', 'indoor_outdoor', 'distance_tradeoff']
         })
       });
       const data = await res.json();
@@ -136,9 +136,9 @@ export default function HomePage() {
       console.warn('질문 생성 실패:', e);
       setQuestion({
         qId: `fallback-${Date.now()}`,
-        intent: 'mood',
-        question: '오늘 점심 기분은 어떠신가요?',
-        options: ['든든하게', '가볍게', '빠르게', '새로운 메뉴']
+        intent: 'meal_feel',
+        question: '오늘 점심은 어떤 느낌으로 드시고 싶으세요?',
+        options: ['든든하게', '가볍게', '빠르게', '새로운 맛']
       });
     } finally {
       setAsking(false);

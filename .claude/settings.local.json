@@ -7,7 +7,9 @@
       "Bash(npx tailwindcss init:*)",
       "Bash(npm test)",
       "Bash(npm run test:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []
