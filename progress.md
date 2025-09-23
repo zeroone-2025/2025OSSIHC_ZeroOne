@@ -1,5 +1,6 @@
 # Progress Log
 
+[YYYY-MM-DD HH:MM] Flow fix: 단일 상태머신 도입, 부트→QA(3~4문항)→추천→지연 평가까지 자연 통합. 기존 날씨/ETA/Places/가중합 재사용. pendingReview+알림 도입.
 [2025-09-23 01:09] Day1 Scaffold: json 데이터 생성(restaurants.json 21개, config.json), lib(types.ts/store.ts/recommend.ts) 추가, 라우트 4개(home/settings/history/map) 구성, Kakao 지도 스켈레톤, LocalStorage(pref/visits) 연결, recommend 기본 테스트 통과, Next.js 개발서버 실행
 
 [2025-09-23 01:23] Day1 Scaffold+Weather: json(식당/설정/날씨) 준비, lib(types/store/weather/recommend) 날씨 반영, 4 라우트 UI/UX 개선, Kakao 지도 스켈레톤, weights.weather=0.10 적용, reason에 날씨 토큰(비예보/체감추움/후덥지근/맑음/강풍/최고↑/최저↓) 설계, deriveFlags 테스트 8건 통과, 환경변수 확장
@@ -11,3 +12,5 @@ Day2 기능 점검 완료
 
 [2025-09-23 02:30] Day2: OpenAI 질문 프록시(프롬프트 엔지니어링 규칙 적용), 기상청 실황/초단기/단기 프록시 연결, 병합·가중치 반영, 홈 결선 완료
 
+[2025-09-23 04:15] Day2-통합: LLM intent(time_pressure/distance_tradeoff) 추가, recommend에 ETA 보강(거리 항 통합), Kakao Places에 etaMins 주입, 카드에 ETA 토큰 표기. 별도 화면·로직 분리 없이 기존 플로우에 자연 결합
+[2025-09-23 16:45] 세션 초기화·모바일 내비·프로필 개편 및 키 검증 강화 작업 완료

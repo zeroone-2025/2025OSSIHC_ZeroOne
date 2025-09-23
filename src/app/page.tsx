@@ -1,367 +1,379 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { ThumbsUp, ThumbsDown, MapPin, Settings, History, Cloud, Thermometer, Wind } from 'lucide-react';
-import { Restaurant, RecommendationResult, WeatherSnapshot } from '../../lib/types';
-import { getRecommendations } from '../../lib/recommend';
-import { addVisit } from '../../lib/store';
-import { loadMergedWeather } from '../../lib/weather';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { ThumbsUp, ThumbsDown, MapPin, Cloud, Thermometer, Wind, RotateCcw } from 'lucide-react'
+import type { RecommendationResult, WeatherSnapshot } from '../../lib/types'
+import { addVisit } from '../../lib/store'
+import { boot, askNext, applyAnswer, finalize, scheduleReview } from '../../lib/flow'
+import { createInitialState, reducer, restoreSession, persistSession, resetSession } from '../../lib/state'
+import type { NextQuestion } from '../../lib/llm'
+import { MissingOperatorKeyError } from '../../lib/llm'
+import { MissingWeatherKeyError } from '../../lib/weather'
 
-export default function HomePage() {
-  const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
-  const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
-  const [config, setConfig] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [weather, setWeather] = useState<WeatherSnapshot | null>(null);
-  const [showWeatherToast, setShowWeatherToast] = useState(false);
-  const [question, setQuestion] = useState<{ qId: string; intent: string; question: string; options: string[] } | null>(null);
-  const [asking, setAsking] = useState(false);
+interface ToastState {
+  message: string
+  tone: 'info' | 'warning' | 'error'
+}
+
+const touchButtonClass = 'rounded-2xl px-4 py-4 text-base font-semibold shadow-sm transition-all duration-150 active:scale-95'
+
+export default function HomePage(): JSX.Element {
+  const [state, dispatch] = useReducer(
+    reducer,
+    undefined,
+    () => (typeof window === 'undefined' ? createInitialState() : restoreSession() ?? createInitialState())
+  )
+  const [recommendations, setRecommendations] = useState<RecommendationResult[]>([])
+  const [question, setQuestion] = useState<NextQuestion | null>(null)
+  const [asking, setAsking] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [toast, setToast] = useState<ToastState | null>(null)
+  const [bootError, setBootError] = useState<string | null>(null)
+
+  const bootedRef = useRef(false)
 
   useEffect(() => {
-    async function loadRecommendations() {
+    persistSession(state)
+  }, [state])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function start() {
+      if (bootedRef.current) return
+      bootedRef.current = true
+      setLoading(true)
+      setBootError(null)
+
       try {
-        // Get user location
-        let lat = 37.5665; // Default: Seoul City Hall
-        let lng = 126.9780;
-
-        if ('geolocation' in navigator) {
-          try {
-            const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, {
-                timeout: 5000,
-                enableHighAccuracy: false
-              });
-            });
-            lat = position.coords.latitude;
-            lng = position.coords.longitude;
-          } catch (geoError) {
-            console.warn('Geolocation failed, using default location:', geoError);
-          }
-        }
-
-        // Load data in parallel
-        const [restaurantsRes, configRes] = await Promise.all([
-          fetch('/data/restaurants.json'),
-          fetch('/data/config.json')
-        ]);
-
-        const restaurants: Restaurant[] = await restaurantsRes.json();
-        const cfg = await configRes.json();
-        setAllRestaurants(restaurants);
-        setConfig(cfg);
-
-        // Load weather with complete fallback chain
-        const mergedWeather = await loadMergedWeather(lat, lng);
-
-        setWeather(mergedWeather);
-
-        // Show toast for bad weather conditions
-        if (mergedWeather.flags.wet || mergedWeather.flags.windy) {
-          setShowWeatherToast(true);
-          setTimeout(() => setShowWeatherToast(false), 5000);
-        }
-
-        const results = getRecommendations(restaurants, mergedWeather, cfg);
-        setRecommendations(results);
+        await boot(dispatch)
       } catch (error) {
-        console.error('Failed to load recommendations:', error);
+        if (cancelled) return
+        if (error instanceof MissingWeatherKeyError) {
+          setBootError('운영자 WEATHER_AUTH_KEY 설정이 필요합니다.')
+          setToast({ message: '날씨 정보를 불러올 수 없어요. 운영자 키를 확인해 주세요.', tone: 'error' })
+        } else {
+          const message = error instanceof Error ? error.message : '초기화에 실패했습니다.'
+          setBootError(message)
+          setToast({ message, tone: 'error' })
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false)
+        }
       }
     }
 
-    loadRecommendations();
-  }, []);
+    if (state.step === 'boot') {
+      start()
+    } else {
+      setLoading(false)
+    }
 
-  const handleLike = () => {
-    if (currentIndex >= recommendations.length) return;
+    return () => {
+      cancelled = true
+    }
+  }, [state.step])
 
-    const current = recommendations[currentIndex];
-    addVisit({
-      restaurantId: current.restaurant.id,
-      timestamp: Date.now(),
-      liked: true
-    });
+  useEffect(() => {
+    setRecommendations(finalize(state))
+  }, [state])
 
-    nextCard();
-  };
+  useEffect(() => {
+    let active = true
+    if (state.step !== 'qa') return
+    if (asking || question) return
 
-  const handleDislike = () => {
-    if (currentIndex >= recommendations.length) return;
+    setAsking(true)
+    askNext(state)
+      .then((next) => {
+        if (!active) return
+        setQuestion(next)
+      })
+      .catch((error) => {
+        if (!active) return
+        if (error instanceof MissingOperatorKeyError) {
+          setToast({ message: '질문 생성을 위한 OPENAI_API_KEY가 필요합니다.', tone: 'error' })
+          setBootError('OPENAI 키가 설정되지 않았습니다.')
+        } else if (error instanceof Error && error.message.includes('질문할 인텐트')) {
+          dispatch({ type: 'QNA_DONE' })
+          setQuestion(null)
+        } else {
+          const message = error instanceof Error ? error.message : '질문을 불러오지 못했습니다.'
+          setToast({ message, tone: 'error' })
+        }
+      })
+      .finally(() => {
+        if (active) setAsking(false)
+      })
 
-    const current = recommendations[currentIndex];
-    addVisit({
-      restaurantId: current.restaurant.id,
-      timestamp: Date.now(),
-      liked: false
-    });
+    return () => {
+      active = false
+    }
+  }, [state, asking, question])
 
-    nextCard();
-  };
+  const currentRecommendation = recommendations[0] ?? null
 
-  const nextCard = () => {
-    setCurrentIndex(prev => prev + 1);
-  };
+  const weatherBadges = useMemo(() => {
+    const target = state.weather
+    if (!target) return []
+    const badges: Array<{ icon: JSX.Element; text: string }> = []
+    const temperature = Math.round(target.T1H ?? target.TMP ?? 15)
+    badges.push({ icon: <Thermometer size={14} />, text: `${temperature}°C` })
+    if (target.RN1 || target.PCP || target.flags.wet) {
+      badges.push({ icon: <Cloud size={14} />, text: target.RN1 ? `${target.RN1}mm` : '강수' })
+    }
+    badges.push({ icon: <Wind size={14} />, text: `${Math.round(target.WSD ?? 1.5)}m/s` })
+    return badges
+  }, [state.weather])
 
-  const openKakaoMap = (lat: number, lng: number, name: string) => {
-    const kakaoUrl = `https://map.kakao.com/link/to/${encodeURIComponent(name)},${lat},${lng}`;
-    window.open(kakaoUrl, '_blank');
-  };
+  const handleReset = useCallback(() => {
+    resetSession()
+    dispatch({ type: 'RESET' })
+    setRecommendations([])
+    setQuestion(null)
+    setToast({ message: '세션을 초기화했어요.', tone: 'info' })
+    bootedRef.current = false
+  }, [])
 
-  const askNextQuestion = async () => {
-    if (!weather || !allRestaurants.length) return;
-    setAsking(true);
+  const handleAnswer = useCallback(async (answer: string) => {
+    if (!question) return
+
+    const collectedAt = Date.now()
+    const intent = question.intent
+    dispatch({ type: 'ANSWER_COMMIT', answer: { qId: question.qId, intent, option: answer } })
+
+    const parsedMinutes = intent === 'time_pressure' ? interpretTimePressure(answer) : undefined
+    if (typeof parsedMinutes === 'number') {
+      dispatch({ type: 'SET_FREE_TIME', minutes: parsedMinutes })
+    }
+
+    const simulatedState = {
+      ...state,
+      answers: [
+        ...state.answers,
+        { qId: question.qId, intent, option: answer, collectedAt },
+      ],
+      freeTimeMins: typeof parsedMinutes === 'number' ? parsedMinutes : state.freeTimeMins,
+    }
+
+    const updatedResults = applyAnswer({ ...simulatedState, pool: state.pool })
+    const updatedPool = updatedResults.map((entry) => entry.restaurant)
+    dispatch({ type: 'RECOMMEND_READY', pool: updatedPool })
+    setRecommendations(updatedResults)
+    setQuestion(null)
+
     try {
-      const topTags = recommendations.length ? recommendations[0].restaurant.tags.slice(0, 3) : allRestaurants[0].tags.slice(0, 3);
-      const activeFlags = Object.entries(weather.flags)
-        .filter(([, v]) => Boolean(v))
-        .map(([k]) => k);
-
-      const res = await fetch('/api/llm/next-question', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session: {
-            upperTags: topTags,
-            weatherFlags: activeFlags,
-            previousAnswers: []
-          },
-          remainingIntents: ['meal_feel', 'time_pressure', 'spice_tolerance', 'group_dyn', 'diet_focus', 'indoor_outdoor', 'distance_tradeoff']
-        })
-      });
-      const data = await res.json();
-      setQuestion(data);
-    } catch (e) {
-      console.warn('질문 생성 실패:', e);
-      setQuestion({
-        qId: `fallback-${Date.now()}`,
-        intent: 'meal_feel',
-        question: '오늘 점심은 어떤 느낌으로 드시고 싶으세요?',
-        options: ['든든하게', '가볍게', '빠르게', '새로운 맛']
-      });
-    } finally {
-      setAsking(false);
+      const nextQuestion = await askNext({ ...simulatedState, pool: updatedPool })
+      setQuestion(nextQuestion)
+    } catch (error) {
+      if (error instanceof MissingOperatorKeyError) {
+        setToast({ message: 'OPENAI 키가 없어서 추가 질문을 할 수 없습니다.', tone: 'warning' })
+      } else if (error instanceof Error && error.message.includes('질문할 인텐트')) {
+        dispatch({ type: 'QNA_DONE' })
+      }
     }
-  };
+  }, [question, state])
 
-  const applyAnswer = (option: string) => {
-    if (!allRestaurants.length) return;
-
-    let filtered = allRestaurants.slice();
-    const opt = option.toLowerCase();
-
-    // Simple heuristics to narrow candidates
-    if (opt.includes('가볍') || opt.includes('light') || opt.includes('salad')) {
-      filtered = filtered.filter(r => r.tags.includes('light') || r.tags.includes('salad') || r.macros.kcal < 450);
-    } else if (opt.includes('든든') || opt.includes('protein') || opt.includes('고기') || opt.includes('meat') || opt.includes('hearty')) {
-      filtered = filtered.filter(r => r.macros.protein > 20 || r.tags.includes('meat') || r.tags.includes('hearty'));
-    } else if (opt.includes('빠르') || opt.includes('quick') || opt.includes('fast')) {
-      filtered = filtered.filter(r => r.price_tier <= 2);
-    } else if (opt.includes('국') || opt.includes('따뜻') || opt.includes('soup') || opt.includes('warm')) {
-      filtered = filtered.filter(r => r.tags.includes('soup') || r.tags.includes('warm'));
+  const removeActiveRecommendation = useCallback((reason?: 'like' | 'skip') => {
+    setRecommendations((prev) => prev.slice(1))
+    if (state.pool.length > 1) {
+      const reducedPool = state.pool.slice(1)
+      dispatch({ type: 'RECOMMEND_READY', pool: reducedPool })
     }
+    if (reason === 'like' && currentRecommendation) {
+      dispatch({ type: 'DECIDE', placeId: currentRecommendation.restaurant.id })
+    }
+  }, [state.pool, currentRecommendation])
 
-    const newRecs = getRecommendations(filtered.length ? filtered : allRestaurants, weather || undefined, config || undefined);
-    setRecommendations(newRecs);
-    setCurrentIndex(0);
-    setQuestion(null);
-  };
+  const handleLike = useCallback(() => {
+    if (!currentRecommendation) return
+    addVisit({
+      restaurantId: currentRecommendation.restaurant.id,
+      timestamp: Date.now(),
+      liked: true,
+      reason: currentRecommendation.reason,
+    })
+    scheduleReview(currentRecommendation.restaurant.id)
+    removeActiveRecommendation('like')
+  }, [currentRecommendation, removeActiveRecommendation])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-lg text-gray-700">로딩</div>
-      </div>
-    );
-  }
+  const handleDislike = useCallback(() => {
+    if (!currentRecommendation) return
+    addVisit({
+      restaurantId: currentRecommendation.restaurant.id,
+      timestamp: Date.now(),
+      liked: false,
+      reason: currentRecommendation.reason,
+    })
+    removeActiveRecommendation('skip')
+  }, [currentRecommendation, removeActiveRecommendation])
 
-  if (currentIndex >= recommendations.length) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center bg-white rounded-2xl shadow-md p-8 max-w-md mx-4">
-          <h2 className="text-2xl font-bold mb-4 text-gray-800">추천 완료!</h2>
-          <p className="text-gray-600 mb-6">새로운 추천을 받으려면 새로고침하세요.</p>
-          <div className="flex gap-3 justify-center">
-            <a href="/settings" className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 transition-colors">
-              <Settings size={16} />
-              설정
-            </a>
-            <a href="/history" className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600 transition-colors">
-              <History size={16} />
-              기록
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const openMap = useCallback(() => {
+    if (!currentRecommendation) return
+    const { restaurant } = currentRecommendation
+    const kakaoUrl = `https://map.kakao.com/link/to/${encodeURIComponent(restaurant.name)},${restaurant.lat},${restaurant.lng}`
+    window.open(kakaoUrl, '_blank', 'noopener,noreferrer')
+  }, [currentRecommendation])
 
-  const current = recommendations[currentIndex];
+  const heroSubtitle = 'LLM 질문→답변→이유있는 점심 추천'
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <div className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-sm border-b border-gray-200 z-10">
-        <div className="max-w-md mx-auto px-4 py-3">
-            <div className="flex items-center justify-between mb-2">
-              <h1 className="text-xl font-bold text-gray-800">점심 추천</h1>
-              <div className="flex gap-2">
-                <a href="/settings" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                  <Settings size={20} className="text-gray-600" />
-                </a>
-                <a href="/history" className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                  <History size={20} className="text-gray-600" />
-                </a>
-                <button
-                  onClick={askNextQuestion}
-                  disabled={asking}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
-                  title="다음 질문"
-                >
-                  {asking ? '…' : 'Q'}
-                </button>
-              </div>
+    <div className="mx-auto max-w-md pb-24">
+      <header className="sticky top-0 z-20 bg-gradient-to-b from-white/90 to-white/30 backdrop-blur-md">
+        <div className="px-4 pb-3 pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">이유있는 점심 추천</h1>
+              <p className="text-sm text-gray-500">{heroSubtitle}</p>
             </div>
-
-          {/* Weather mini badges */}
-          {weather && (
-            <div className="flex items-center gap-2 text-xs">
-              <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
-                <Thermometer size={12} />
-                <span>{Math.round(weather.T1H || weather.TMP || 15)}°C</span>
-              </div>
-              {(weather.RN1 || weather.PCP) && (
-                <div className="flex items-center gap-1 bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                  <Cloud size={12} />
-                  <span>{weather.RN1 || weather.PCP}mm</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
-                <Wind size={12} />
-                <span>{Math.round(weather.WSD || 1.5)}m/s</span>
-              </div>
+            <button
+              onClick={handleReset}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition-colors hover:text-blue-600"
+              title="세션 초기화"
+            >
+              <RotateCcw size={18} />
+            </button>
+          </div>
+          {state.weather && (
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-600">
+              {weatherBadges.map((badge, idx) => (
+                <span key={idx} className="flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1">
+                  {badge.icon}
+                  {badge.text}
+                </span>
+              ))}
             </div>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Weather Toast */}
-      {showWeatherToast && (
-        <div className="fixed top-20 left-4 right-4 bg-orange-500 text-white px-4 py-3 rounded-xl shadow-lg z-20 max-w-md mx-auto">
-          <p className="text-sm text-center">
-            {weather?.flags.wet && weather?.flags.windy ? '비바람으로' :
-             weather?.flags.wet ? '비 예보로' : '강풍으로'} 가까운 곳을 우선 추천합니다
-          </p>
+      {toast && (
+        <div
+          className={`mx-4 mt-4 rounded-2xl px-4 py-3 text-sm shadow ${
+            toast.tone === 'error'
+              ? 'bg-red-50 text-red-700'
+              : toast.tone === 'warning'
+              ? 'bg-amber-50 text-amber-700'
+              : 'bg-blue-50 text-blue-700'
+          }`}
+        >
+          {toast.message}
         </div>
       )}
 
-      {/* Question panel */}
+      {bootError && (
+        <div className="mx-4 mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {bootError}
+        </div>
+      )}
+
+      {loading && (
+        <div className="mt-20 flex flex-col items-center justify-center gap-3 text-gray-500">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-200 border-t-blue-500" />
+          <span className="text-sm">초기 데이터를 불러오는 중입니다…</span>
+        </div>
+      )}
+
+      {!loading && !currentRecommendation && !question && (
+        <div className="mx-4 mt-20 rounded-3xl bg-white p-8 text-center shadow">
+          <p className="text-base text-gray-600">추천 가능한 결과가 없습니다. 취향을 업데이트하거나 잠시 후 다시 시도해 주세요.</p>
+        </div>
+      )}
+
       {question && (
-        <div className="fixed top-20 left-0 right-0 z-20">
-          <div className="max-w-md mx-auto px-4">
-            <div className="bg-white rounded-2xl shadow-md p-4 border border-blue-200">
-              <div className="text-sm text-gray-500 mb-1">다음 질문</div>
-              <div className="font-semibold text-gray-800 mb-3">{question.question}</div>
-              <div className="grid grid-cols-2 gap-2">
-                {question.options.slice(0,4).map((opt, i) => (
-                  <button
-                    key={i}
-                    onClick={() => applyAnswer(opt)}
-                    className="text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-xl"
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
+        <section className="mx-4 mt-6 rounded-3xl border border-blue-100 bg-white p-5 shadow-sm">
+          <div className="text-xs font-semibold text-blue-500">맞춤 질문</div>
+          <div className="mt-2 text-base font-semibold text-gray-900">{question.question}</div>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {question.options.map((option) => (
+              <button
+                key={option}
+                onClick={() => handleAnswer(option)}
+                className="rounded-2xl bg-blue-50 px-3 py-3 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
+                style={{ minHeight: 48 }}
+              >
+                {option}
+              </button>
+            ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Content */}
-      <div className="pt-32 pb-8 px-4">
-        <div className="max-w-md mx-auto">
-          <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-            <div className="p-6">
-              <h2 className="text-2xl font-bold mb-3 text-gray-800">{current.restaurant.name}</h2>
+      {currentRecommendation && (
+        <main className="mx-4 mt-6 rounded-3xl bg-white p-6 shadow">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-2xl font-bold text-gray-900">{currentRecommendation.restaurant.name}</h2>
+            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+              ETA {currentRecommendation.etaMins}분
+            </span>
+          </div>
 
-              {/* Reason badges */}
-              <div className="mb-4">
-                {current.reason.split(' · ').map((reason, index) => (
-                  <span key={index} className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm mr-2 mb-2">
-                    {reason}
-                  </span>
-                ))}
-              </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {currentRecommendation.reason.split(' · ').map((token) => (
+              <span key={token} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                {token}
+              </span>
+            ))}
+          </div>
 
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-sm font-medium">
-                    {current.restaurant.category}
-                  </span>
-                  <span className="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-sm font-medium">
-                    {current.restaurant.price_tier === 1 ? '저렴' : current.restaurant.price_tier === 2 ? '보통' : '고급'}
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {current.restaurant.tags.map(tag => (
-                    <span key={tag} className="bg-gray-50 text-gray-600 px-2 py-1 rounded-lg text-xs">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>칼로리: {current.restaurant.macros.kcal}kcal</div>
-                    <div>단백질: {current.restaurant.macros.protein}g</div>
-                    <div>지방: {current.restaurant.macros.fat}g</div>
-                    <div>탄수화물: {current.restaurant.macros.carb}g</div>
-                  </div>
-                  <div className="mt-2 pt-2 border-t border-gray-200">
-                    예상 시간: {current.etaMins}분
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={handleDislike}
-                  className="flex-1 flex items-center justify-center gap-2 bg-red-500 text-white py-4 px-4 rounded-xl hover:bg-red-600 active:scale-95 transition-all duration-150 shadow-sm"
-                >
-                  <ThumbsDown size={20} />
-                  패스
-                </button>
-
-                <button
-                  onClick={() => openKakaoMap(
-                    current.restaurant.lat,
-                    current.restaurant.lng,
-                    current.restaurant.name
-                  )}
-                  className="flex items-center justify-center bg-yellow-500 text-white py-4 px-4 rounded-xl hover:bg-yellow-600 active:scale-95 transition-all duration-150 shadow-sm"
-                >
-                  <MapPin size={20} />
-                </button>
-
-                <button
-                  onClick={handleLike}
-                  className="flex-1 flex items-center justify-center gap-2 bg-green-500 text-white py-4 px-4 rounded-xl hover:bg-green-600 active:scale-95 transition-all duration-150 shadow-sm"
-                >
-                  <ThumbsUp size={20} />
-                  좋아요
-                </button>
-              </div>
+          <div className="mt-4 space-y-2 rounded-2xl bg-gray-50 p-4 text-sm text-gray-700">
+            <div className="flex justify-between">
+              <span>분류</span>
+              <span>{currentRecommendation.restaurant.category}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>예상 거리</span>
+              <span>{currentRecommendation.etaMins * 80}m ±</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-2 text-xs text-gray-600">
+              <div>칼로리 {currentRecommendation.restaurant.macros.kcal}kcal</div>
+              <div>단백질 {currentRecommendation.restaurant.macros.protein}g</div>
+              <div>지방 {currentRecommendation.restaurant.macros.fat}g</div>
+              <div>탄수화물 {currentRecommendation.restaurant.macros.carb}g</div>
             </div>
           </div>
 
-          <div className="mt-6 text-center text-sm text-gray-500">
-            {currentIndex + 1} / {recommendations.length}
+          <div className="mt-6 flex items-center gap-3">
+            <button
+              onClick={handleDislike}
+              className={`${touchButtonClass} flex-1 bg-red-500 text-white hover:bg-red-600`}
+            >
+              <ThumbsDown size={18} />
+              패스
+            </button>
+            <button
+              onClick={openMap}
+              className={`${touchButtonClass} flex w-14 items-center justify-center bg-yellow-400 text-white hover:bg-yellow-500`}
+              aria-label="지도 열기"
+            >
+              <MapPin size={18} />
+            </button>
+            <button
+              onClick={handleLike}
+              className={`${touchButtonClass} flex-1 bg-green-500 text-white hover:bg-green-600`}
+            >
+              <ThumbsUp size={18} />
+              좋아요
+            </button>
           </div>
-        </div>
-      </div>
+
+          <div className="mt-4 text-center text-xs text-gray-500">
+            {Math.min(5, recommendations.length)}개 중 1번째 추천
+          </div>
+        </main>
+      )}
     </div>
-  );
+  )
+}
+
+function interpretTimePressure(option: string): number | undefined {
+  const lower = option.toLowerCase()
+  if (lower.includes('5')) return 5
+  if (lower.includes('10')) return 10
+  if (lower.includes('15')) return 15
+  if (lower.includes('20')) return 20
+  if (lower.includes('여유') || lower.includes('상관없')) return 25
+  const numeric = parseInt(option, 10)
+  return Number.isFinite(numeric) ? numeric : undefined
 }

@@ -1,22 +1,50 @@
+import type { SessionState } from './state';
 import { Pref, Visit } from './types';
 
+interface PendingReview { placeId: string; decidedAt: number }
+
 const PREF_KEY = 'pref';
+const LEGACY_PREF_KEY = 'settings';
 const VISITS_KEY = 'visits';
+const PENDING_REVIEW_KEY = 'pendingReview';
+const SESSION_KEY = 'session';
 
 const defaultPreferences: Pref = {
-  mode: 'light',
   allergies: [],
   dislikes: [],
-  groupSize: 1,
   weather: true,
 };
+
+function migrateLegacyPreferences(): Pref | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const legacyRaw = localStorage.getItem(LEGACY_PREF_KEY);
+    if (!legacyRaw) return null;
+    const legacy = JSON.parse(legacyRaw);
+    const migrated: Pref = {
+      allergies: Array.isArray(legacy?.allergies) ? legacy.allergies : [],
+      dislikes: Array.isArray(legacy?.dislikes) ? legacy.dislikes : [],
+      weather: typeof legacy?.weather === 'boolean' ? legacy.weather : true,
+    };
+    if (legacy?.mode) migrated.mode = legacy.mode;
+    if (legacy?.groupSize) migrated.groupSize = Number(legacy.groupSize) || undefined;
+    localStorage.setItem(PREF_KEY, JSON.stringify(migrated));
+    localStorage.removeItem(LEGACY_PREF_KEY);
+    return migrated;
+  } catch {
+    return null;
+  }
+}
 
 export function getPreferences(): Pref {
   if (typeof window === 'undefined') return defaultPreferences;
 
   try {
     const stored = localStorage.getItem(PREF_KEY);
-    if (!stored) return defaultPreferences;
+    if (!stored) {
+      return migrateLegacyPreferences() ?? defaultPreferences;
+    }
     return { ...defaultPreferences, ...JSON.parse(stored) };
   } catch {
     return defaultPreferences;
@@ -29,6 +57,40 @@ export function setPreferences(pref: Partial<Pref>): void {
   const current = getPreferences();
   const updated = { ...current, ...pref };
   localStorage.setItem(PREF_KEY, JSON.stringify(updated));
+}
+
+export function getStoredSession(): SessionState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.state ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredSession(state: SessionState): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const payload = {
+      savedAt: Date.now(),
+      state,
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearStoredSession(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 export function getVisits(): Visit[] {
@@ -56,4 +118,28 @@ export function getRecentRestaurantIds(days: number = 7): string[] {
   return visits
     .filter(v => v.timestamp > cutoff)
     .map(v => v.restaurantId);
+}
+
+export function getPendingReview(): PendingReview | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const stored = localStorage.getItem(PENDING_REVIEW_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setPendingReview(pending: PendingReview): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(PENDING_REVIEW_KEY, JSON.stringify(pending));
+  } catch { /* ignore */ }
+}
+
+export function clearPendingReview(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(PENDING_REVIEW_KEY);
+  } catch { /* ignore */ }
 }

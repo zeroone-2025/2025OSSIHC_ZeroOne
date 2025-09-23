@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { coordToGrid, roundToShortTime, createWeatherUrl, createCacheHeaders, createErrorResponse } from '../_utils';
+import { coordToGrid, roundToShortTime, createWeatherUrl, createCacheHeaders } from '../_utils';
+
+const WEATHER_AUTH_KEY = process.env.WEATHER_AUTH_KEY;
 
 export async function GET(request: NextRequest) {
+  if (!WEATHER_AUTH_KEY) {
+    return NextResponse.json({ error: 'NO_WEATHER_KEY' }, { status: 503 });
+  }
+
   const searchParams = request.nextUrl.searchParams;
   const lat = parseFloat(searchParams.get('lat') || '37.5665');
   const lng = parseFloat(searchParams.get('lng') || '126.9780');
-
-  const fallbackData = {
-    tmfc: new Date().toISOString(),
-    TMP: 15,
-    REH: 60,
-    WSD: 1.5,
-    SKY: 1,
-    PTY: 0,
-    POP: 0,
-    TMX: undefined,
-    TMN: undefined
-  };
 
   try {
     const { nx, ny } = coordToGrid(lat, lng);
@@ -93,12 +87,13 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    return new NextResponse(
-      createErrorResponse('Short weather API failed', fallbackData).body,
+    console.error('Short weather API failed', error);
+    return NextResponse.json(
+      { error: 'WEATHER_UPSTREAM_FAILED' },
       {
-        status: 200,
+        status: 502,
         headers: {
-          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
           ...createCacheHeaders(60)
         }
       }

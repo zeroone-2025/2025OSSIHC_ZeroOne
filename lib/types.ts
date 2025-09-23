@@ -14,14 +14,16 @@ export interface Restaurant {
     carb: number;
   };
   season: ('spring' | 'summer' | 'autumn' | 'winter')[];
+  etaMins?: number;
 }
 
 export interface Pref {
-  mode: 'light' | 'heavy';
   allergies: string[];
   dislikes: string[];
-  groupSize: number;
   weather: boolean;
+  // Legacy fields retained for migration support
+  mode?: 'light' | 'heavy';
+  groupSize?: number;
 }
 
 export interface Visit {

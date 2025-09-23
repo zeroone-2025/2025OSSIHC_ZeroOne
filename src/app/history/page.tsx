@@ -1,121 +1,226 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { ThumbsUp, ThumbsDown } from 'lucide-react';
-import { getVisits } from '../../../lib/store';
-import { Visit, Restaurant } from '../../../lib/types';
+import { useEffect, useMemo, useState } from 'react'
+import { ThumbsUp, ThumbsDown, Star, CheckCircle2 } from 'lucide-react'
+import { getVisits, getPendingReview, clearPendingReview, addVisit } from '../../../lib/store'
+import type { Visit, Restaurant } from '../../../lib/types'
 
-export default function HistoryPage() {
-  const [visits, setVisits] = useState<Visit[]>([]);
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function HistoryPage(): JSX.Element {
+  const [visits, setVisits] = useState<Visit[]>([])
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([])
+  const [pending, setPending] = useState<{ placeId: string; decidedAt: number } | null>(null)
+  const [rating, setRating] = useState<number>(0)
+  const [wouldReturn, setWouldReturn] = useState<boolean | null>(null)
+  const [tags, setTags] = useState<string[]>([])
+  const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
-    async function loadData() {
+    async function load() {
       try {
-        const response = await fetch('/data/restaurants.json');
-        const restaurantData: Restaurant[] = await response.json();
-        setRestaurants(restaurantData);
-
-        const visitData = getVisits();
-        const sortedVisits = visitData.sort((a, b) => b.timestamp - a.timestamp).slice(0, 20);
-        setVisits(sortedVisits);
+        const response = await fetch('/data/restaurants.json')
+        const data: Restaurant[] = await response.json()
+        setRestaurants(data)
       } catch (error) {
-        console.error('Failed to load history:', error);
-      } finally {
-        setLoading(false);
+        console.error('Failed to load restaurants', error)
       }
+      const history = getVisits().sort((a, b) => b.timestamp - a.timestamp).slice(0, 30)
+      setVisits(history)
+      setPending(getPendingReview())
     }
+    load()
+  }, [])
 
-    loadData();
-  }, []);
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 2000)
+    return () => clearTimeout(timer)
+  }, [toast])
 
-  const getRestaurantById = (id: string): Restaurant | undefined => {
-    return restaurants.find(r => r.id === id);
-  };
+  const visitCards = useMemo(() => visits.map((visit) => ({
+    visit,
+    restaurant: restaurants.find((item) => item.id === visit.restaurantId) ?? null,
+  })), [visits, restaurants])
 
-  const formatDate = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const pendingRestaurant = useMemo(
+    () => restaurants.find((item) => item.id === pending?.placeId) ?? null,
+    [pending, restaurants]
+  )
 
-    if (diffDays === 0) return '오늘';
-    if (diffDays === 1) return '어제';
-    if (diffDays < 7) return `${diffDays}일 전`;
-    return date.toLocaleDateString('ko-KR');
-  };
+  const toggleTag = (tag: string) => {
+    setTags((prev) => (prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag]))
+  }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">로딩</div>
-      </div>
-    );
+  const submitPending = () => {
+    if (!pending) return
+    addVisit({
+      restaurantId: pending.placeId,
+      timestamp: Date.now(),
+      liked: rating >= 4 || Boolean(wouldReturn),
+      reason: tags.join(','),
+    })
+    clearPendingReview()
+    setPending(null)
+    setRating(0)
+    setWouldReturn(null)
+    setTags([])
+    setToast('평가를 저장했어요.')
+  }
+
+  const cancelPending = () => {
+    clearPendingReview()
+    setPending(null)
+    setRating(0)
+    setWouldReturn(null)
+    setTags([])
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-md mx-auto">
-        <h1 className="text-2xl font-bold text-center mb-6">방문 기록</h1>
+    <div className="mx-auto max-w-md px-4 pb-24 pt-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">방문 기록</h1>
+        {pending && <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-600">평가 작성</span>}
+      </div>
+      <p className="mt-1 text-sm text-gray-500">좋아요·패스 기록과 평가 요청을 확인하세요.</p>
 
-        {visits.length === 0 ? (
-          <div className="text-center text-gray-500">
-            <p>방문 기록이 없습니다.</p>
+      {pending && pendingRestaurant && (
+        <section className="mt-6 rounded-3xl bg-white p-6 shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">평가 대기 중</h2>
+              <p className="text-sm text-gray-500">{pendingRestaurant.name}</p>
+            </div>
+            <span className="text-xs text-gray-400">{formatRelative(pending.decidedAt)}</span>
+          </div>
+
+          <div className="mt-4 flex items-center gap-2 text-sm">
+            <span className="text-gray-600">만족도</span>
+            {[1, 2, 3, 4, 5].map((value) => (
+              <button
+                key={value}
+                onClick={() => setRating(value)}
+                className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
+                  rating >= value ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-200 bg-gray-50 text-gray-500'
+                }`}
+              >
+                <Star size={16} />
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 flex items-center gap-2 text-sm">
+            <span className="text-gray-600">재방문</span>
+            <button
+              onClick={() => setWouldReturn(true)}
+              className={`rounded-2xl px-4 py-2 text-sm font-medium transition-colors ${
+                wouldReturn === true ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              있다
+            </button>
+            <button
+              onClick={() => setWouldReturn(false)}
+              className={`rounded-2xl px-4 py-2 text-sm font-medium transition-colors ${
+                wouldReturn === false ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              없다
+            </button>
+          </div>
+
+          <div className="mt-4">
+            <span className="text-sm text-gray-600">이유 태그</span>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {['가성비', '가까움', '따뜻함', '건강함', '빠른 제공', '조용함', '단체 적합', '친절함'].map((tag) => {
+                const active = tags.includes(tag)
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => toggleTag(tag)}
+                    className={`rounded-full px-3 py-2 text-xs font-medium transition-colors ${
+                      active ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="mt-6 flex gap-3">
+            <button
+              onClick={submitPending}
+              className="flex-1 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+            >
+              평가 제출
+            </button>
+            <button
+              onClick={cancelPending}
+              className="rounded-2xl border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-600 hover:bg-gray-100"
+            >
+              나중에
+            </button>
+          </div>
+        </section>
+      )}
+
+      <section className="mt-8 space-y-3">
+        {visitCards.length === 0 ? (
+          <div className="rounded-3xl bg-white p-6 text-center text-sm text-gray-500 shadow">
+            아직 기록이 없습니다. 추천에서 좋아요 또는 패스를 눌러 주세요.
           </div>
         ) : (
-          <div className="space-y-3">
-            {visits.map((visit, index) => {
-              const restaurant = getRestaurantById(visit.restaurantId);
-              if (!restaurant) return null;
-
-              return (
-                <div key={index} className="bg-white rounded-lg shadow p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-bold text-lg">{restaurant.name}</h3>
-                      <p className="text-gray-600 text-sm">{restaurant.category}</p>
-                      <p className="text-gray-500 text-xs">{formatDate(visit.timestamp)}</p>
-                    </div>
-                    <div className="ml-4">
-                      {visit.liked ? (
-                        <div className="flex items-center text-green-600">
-                          <ThumbsUp size={20} />
-                          <span className="ml-1 text-sm">좋아요</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center text-red-600">
-                          <ThumbsDown size={20} />
-                          <span className="ml-1 text-sm">패스</span>
-                        </div>
-                      )}
-                    </div>
+          visitCards.map(({ visit, restaurant }) => {
+            if (!restaurant) return null
+            return (
+              <article key={`${visit.restaurantId}-${visit.timestamp}`} className="rounded-3xl bg-white p-5 shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{restaurant.name}</h3>
+                    <p className="text-sm text-gray-500">{restaurant.category}</p>
                   </div>
-
-                  <div className="mt-2">
-                    <div className="flex flex-wrap gap-1">
-                      {restaurant.tags.slice(0, 3).map(tag => (
-                        <span key={tag} className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                  <span className="text-xs text-gray-400">{formatRelative(visit.timestamp)}</span>
                 </div>
-              );
-            })}
-          </div>
+                <div className="mt-4 flex items-center gap-2 text-sm">
+                  {visit.liked ? (
+                    <span className="flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-green-600">
+                      <ThumbsUp size={16} /> 좋아요
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 rounded-full bg-red-50 px-3 py-1 text-red-600">
+                      <ThumbsDown size={16} /> 패스
+                    </span>
+                  )}
+                  {visit.reason && (
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs text-blue-600">{visit.reason}</span>
+                  )}
+                </div>
+              </article>
+            )
+          })
         )}
+      </section>
 
-        <div className="mt-6 text-center">
-          <a
-            href="/"
-            className="bg-blue-500 text-white py-2 px-6 rounded hover:bg-blue-600"
-          >
-            홈으로
-          </a>
+      {toast && (
+        <div className="fixed bottom-24 left-0 right-0 mx-auto flex max-w-[320px] items-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm text-white shadow-lg">
+          <CheckCircle2 size={18} />
+          <span>{toast}</span>
         </div>
-      </div>
+      )}
     </div>
-  );
+  )
+}
+
+function formatRelative(timestamp: number): string {
+  const delta = Date.now() - timestamp
+  const minutes = Math.floor(delta / (1000 * 60))
+  if (minutes < 1) return '방금'
+  if (minutes < 60) return `${minutes}분 전`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}시간 전`
+  const days = Math.floor(hours / 24)
+  if (days === 1) return '어제'
+  if (days < 7) return `${days}일 전`
+  const date = new Date(timestamp)
+  return `${date.getFullYear()}.${date.getMonth() + 1}.${date.getDate()}`
 }

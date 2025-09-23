@@ -113,14 +113,3 @@ export function createCacheHeaders(maxAge: number = 300): HeadersInit {
     'Cache-Control': `s-maxage=${maxAge}, stale-while-revalidate=${maxAge * 2}`
   };
 }
-
-export function createErrorResponse(message: string, fallbackData: any): Response {
-  console.error('Weather API error:', message);
-  return new Response(JSON.stringify(fallbackData), {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/json',
-      ...createCacheHeaders(60) // Shorter cache for errors
-    }
-  });
-}

@@ -1,37 +1,13 @@
 import { WeatherSnapshot } from './types';
 
-export async function loadWeatherSnapshot(): Promise<WeatherSnapshot> {
-  try {
-    const response = await fetch('/data/weather.snapshot.json');
-    if (!response.ok) throw new Error('Failed to fetch weather snapshot');
-    return await response.json();
-  } catch (error) {
-    console.warn('Failed to load weather snapshot, using safe default:', error);
-    return getSafeWeatherDefault();
+export class MissingWeatherKeyError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'MissingWeatherKeyError'
   }
 }
 
-function getSafeWeatherDefault(): WeatherSnapshot {
-  return {
-    source: 'live',
-    tmfc: new Date().toISOString(),
-    T1H: 15,
-    REH: 60,
-    WSD: 1.5,
-    SKY: 1,
-    PTY: 0,
-    POP: 0,
-    flags: {
-      wet: false,
-      feels_cold: false,
-      muggy: false,
-      windy: false,
-      clear: true,
-      hot_peak: false,
-      cold_min: false
-    }
-  };
-}
+const hasWeatherKey = process.env.HAS_WEATHER_KEY === 'true'
 
 export function normalizeLive(apiResponse: any): WeatherSnapshot {
   const item = apiResponse.response?.body?.items?.item?.[0] || {};
@@ -147,6 +123,9 @@ export function deriveFlags(data: any) {
 }
 
 export async function fetchLive(lat: number = 37.5665, lng: number = 126.9780): Promise<WeatherSnapshot> {
+  if (!hasWeatherKey) {
+    throw new MissingWeatherKeyError('WEATHER_AUTH_KEY가 설정되어 있지 않습니다.')
+  }
   const proxyBase = process.env.NEXT_PUBLIC_WEATHER_PROXY_BASE || '/api/weather';
   const url = `${proxyBase}/live?lat=${lat}&lng=${lng}`;
   const response = await fetch(url);
@@ -167,6 +146,9 @@ export async function fetchLive(lat: number = 37.5665, lng: number = 126.9780): 
 }
 
 export async function fetchUltra(lat: number = 37.5665, lng: number = 126.9780): Promise<WeatherSnapshot> {
+  if (!hasWeatherKey) {
+    throw new MissingWeatherKeyError('WEATHER_AUTH_KEY가 설정되어 있지 않습니다.')
+  }
   const proxyBase = process.env.NEXT_PUBLIC_WEATHER_PROXY_BASE || '/api/weather';
   const url = `${proxyBase}/ultra?lat=${lat}&lng=${lng}`;
   const response = await fetch(url);
@@ -188,6 +170,9 @@ export async function fetchUltra(lat: number = 37.5665, lng: number = 126.9780):
 }
 
 export async function fetchShort(lat: number = 37.5665, lng: number = 126.9780): Promise<WeatherSnapshot> {
+  if (!hasWeatherKey) {
+    throw new MissingWeatherKeyError('WEATHER_AUTH_KEY가 설정되어 있지 않습니다.')
+  }
   const proxyBase = process.env.NEXT_PUBLIC_WEATHER_PROXY_BASE || '/api/weather';
   const url = `${proxyBase}/short?lat=${lat}&lng=${lng}`;
   const response = await fetch(url);
@@ -311,45 +296,26 @@ export function setCachedWeather(weather: WeatherSnapshot): void {
 }
 
 export async function loadMergedWeather(lat: number = 37.5665, lng: number = 126.9780): Promise<WeatherSnapshot> {
-  // Check cache first
-  const cached = getCachedWeather();
-  if (cached) {
-    return cached;
+  if (!hasWeatherKey) {
+    throw new MissingWeatherKeyError('WEATHER_AUTH_KEY가 설정되어 있지 않습니다.')
   }
 
-  let live: WeatherSnapshot | undefined;
-  let ultra: WeatherSnapshot | undefined;
-  let short: WeatherSnapshot | undefined;
+  const cached = getCachedWeather()
+  if (cached) {
+    return cached
+  }
 
-  // Try to fetch all three in parallel
-  const promises = [
+  const [live, ultra, short] = await Promise.all([
     fetchLive(lat, lng).catch(() => undefined),
     fetchUltra(lat, lng).catch(() => undefined),
-    fetchShort(lat, lng).catch(() => undefined)
-  ];
+    fetchShort(lat, lng).catch(() => undefined),
+  ])
 
-  try {
-    [live, ultra, short] = await Promise.all(promises);
-  } catch (error) {
-    console.warn('Some weather APIs failed, using available data');
-  }
-
-  // If all APIs failed, try snapshot fallback
   if (!live && !ultra && !short) {
-    try {
-      const snapshot = await loadWeatherSnapshot();
-      setCachedWeather(snapshot);
-      return snapshot;
-    } catch (error) {
-      console.warn('Snapshot also failed, using safe default');
-      const defaultWeather = getSafeWeatherDefault();
-      setCachedWeather(defaultWeather);
-      return defaultWeather;
-    }
+    throw new Error('날씨 데이터를 불러오지 못했습니다.')
   }
 
-  // Merge available data
-  const merged = mergeWeather(live, ultra, short);
-  setCachedWeather(merged);
-  return merged;
+  const merged = mergeWeather(live, ultra, short)
+  setCachedWeather(merged)
+  return merged
 }

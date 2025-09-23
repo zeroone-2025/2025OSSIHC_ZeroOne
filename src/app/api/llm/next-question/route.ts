@@ -11,39 +11,20 @@ interface QuestionRequest {
   remainingIntents: string[];
 }
 
-interface QuestionResponse {
-  qId: string;
-  intent: string;
-  question: string;
-  options: string[];
-}
+const SYSTEM_PROMPT = `역할: 점심 추천을 위한 인터뷰어.
 
-const SYSTEM_PROMPT = `넌 점심 추천 인터뷰어. intent 목록 중 하나를 골라 한국어 질문 한 개를 생성. 출력은 JSON 한 줄.
-
-intents(고정): meal_feel, time_pressure, spice_tolerance, group_dyn, diet_focus, indoor_outdoor, distance_tradeoff
-
-규칙:
-1. remainingIntents 중 첫 번째 선택
-2. 질문 1개, 선택지 4개 (간결)
-3. 금지: 다문항/장문/메뉴 추천
-4. 출력: JSON만
-
-형식: {"qId":"q-타임스탬프","intent":"선택된intent","question":"질문내용?","options":["옵션1","옵션2","옵션3","옵션4"]}`;
-
-function generateFallbackQuestion(): QuestionResponse {
-  return {
-    qId: `fallback-${Date.now()}`,
-    intent: 'meal_feel',
-    question: '오늘 점심은 어떤 느낌으로 드시고 싶으세요?',
-    options: ['든든하게', '가볍게', '빠르게', '새로운 맛']
-  };
-}
+반드시 지킬 것:
+1. remainingIntents 배열의 첫 요소 intent로 질문.
+2. 한국어 질문 1개와 4~5개의 짧은 선택지를 생성.
+3. 메뉴 추천, 다중 질문, 영어 혼용 금지.
+4. 출력은 JSON 한 줄: {"qId":"q-타임스탬프","intent":"intent","question":"질문","options":["옵션1",...]}
+5. options는 사용자 답변 수집용으로, 중복/공백 금지.`;
 
 export async function POST(request: NextRequest) {
   if (!OPENAI_API_KEY) {
     return NextResponse.json(
-      generateFallbackQuestion(),
-      { status: 200 }
+      { error: 'NO_OPENAI_KEY' },
+      { status: 503 }
     );
   }
 
@@ -62,13 +43,13 @@ answerHistory: ${body.session.previousAnswers.join(',')}`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: userPrompt }
         ],
         max_tokens: 200,
-        temperature: 0.3,
+        temperature: 0.2,
         response_format: { type: 'json_object' }
       }),
     });
@@ -93,7 +74,14 @@ answerHistory: ${body.session.previousAnswers.join(',')}`;
         throw new Error('Invalid question format');
       }
 
-      return NextResponse.json(questionData, {
+      // Sanitize to only required fields
+      const sanitized = {
+        qId: String(questionData.qId),
+        intent: String(questionData.intent),
+        question: String(questionData.question),
+        options: Array.isArray(questionData.options) ? questionData.options.slice(0, 6).map((o: any) => String(o)) : [],
+      };
+      return NextResponse.json(sanitized, {
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate'
         }
@@ -106,11 +94,11 @@ answerHistory: ${body.session.previousAnswers.join(',')}`;
 
   } catch (error) {
     console.error('LLM question generation failed:', error);
-
+    const message = error instanceof Error ? error.message : 'LLM 질문 생성 실패';
     return NextResponse.json(
-      generateFallbackQuestion(),
+      { error: message },
       {
-        status: 200,
+        status: 500,
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate'
         }
