@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { ThumbsUp, ThumbsDown, MapPin, Cloud, Thermometer, Wind, RotateCcw } from 'lucide-react'
+import { Card } from './_components/Card'
+import { Button } from './_components/Button'
 import type { RecommendationResult, WeatherSnapshot } from '../../lib/types'
 import { addVisit } from '../../lib/store'
 import { boot, askNext, applyAnswer, finalize, scheduleReview } from '../../lib/flow'
@@ -20,8 +22,6 @@ interface LLMReason {
   detail: string
   source: string
 }
-
-const touchButtonClass = 'rounded-2xl px-4 py-4 text-base font-semibold shadow-sm transition-all duration-150 active:scale-95'
 
 export default function HomePage(): JSX.Element {
   const [state, dispatch] = useReducer(
@@ -124,6 +124,14 @@ export default function HomePage(): JSX.Element {
   }, [state, asking, question])
 
   const currentRecommendation = recommendations[0] ?? null
+
+  const toastToneClass = toast
+    ? toast.tone === 'error'
+      ? 'border-critical/40 text-critical'
+      : toast.tone === 'warning'
+      ? 'border-brand/60 text-brand'
+      : 'border-brand-light/60 text-brand'
+    : ''
 
   const fetchReasons = useCallback(
     async (target: RecommendationResult) => {
@@ -343,115 +351,98 @@ export default function HomePage(): JSX.Element {
     window.open(kakaoUrl, '_blank', 'noopener,noreferrer')
   }, [currentRecommendation])
 
-  const heroSubtitle = 'LLM 질문→답변→이유있는 점심 추천'
-
   return (
-    <div className="mx-auto max-w-md pb-24">
-      <header className="sticky top-0 z-20 bg-gradient-to-b from-white/90 to-white/30 backdrop-blur-md">
-        <div className="px-4 pb-3 pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">이유있는 점심 추천</h1>
-              <p className="text-sm text-gray-500">{heroSubtitle}</p>
-            </div>
-            <button
-              onClick={handleReset}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition-colors hover:text-blue-600"
-              title="세션 초기화"
-            >
-              <RotateCcw size={18} />
-            </button>
-          </div>
-          {state.weather && (
-            <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-600">
-              {weatherBadges.map((badge, idx) => (
-                <span key={idx} className="flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1">
-                  {badge.icon}
-                  {badge.text}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      </header>
+    <div className="section space-y-4">
+      <Card tone="soft" className="flex items-center justify-end p-3">
+        <Button
+          aria-label="세션 초기화"
+          variant="secondary"
+          className="w-12 px-0 text-brand"
+          onClick={handleReset}
+        >
+          <RotateCcw size={18} />
+        </Button>
+      </Card>
+
+      {state.weather && (
+        <Card tone="soft" className="flex flex-wrap gap-2 p-4 text-xs text-brand">
+          {weatherBadges.map((badge, idx) => (
+            <span key={idx} className="inline-flex items-center gap-1 rounded-full border border-brand-light/60 bg-white px-3 py-1 shadow-sm">
+              {badge.icon}
+              {badge.text}
+            </span>
+          ))}
+        </Card>
+      )}
 
       {llmUnavailable && (
-        <div className="mx-4 mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <Card tone="soft" className="p-4 text-sm text-brand">
           운영자: OPENAI_API_KEY 설정이 필요합니다.
-        </div>
+        </Card>
       )}
 
       {toast && (
-        <div
-          className={`mx-4 mt-4 rounded-2xl px-4 py-3 text-sm shadow ${
-            toast.tone === 'error'
-              ? 'bg-red-50 text-red-700'
-              : toast.tone === 'warning'
-              ? 'bg-amber-50 text-amber-700'
-              : 'bg-blue-50 text-blue-700'
-          }`}
-        >
+        <Card tone="soft" className={`p-4 text-sm ${toastToneClass}`}>
           {toast.message}
-        </div>
+        </Card>
       )}
 
       {bootError && (
-        <div className="mx-4 mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <Card tone="soft" className="p-4 text-sm !border-critical/40 text-critical">
           {bootError}
-        </div>
+        </Card>
       )}
 
       {loading && (
-        <div className="mt-20 flex flex-col items-center justify-center gap-3 text-gray-500">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-200 border-t-blue-500" />
+        <Card tone="soft" className="flex flex-col items-center justify-center gap-3 p-6 text-brand">
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand-pale border-t-brand" />
           <span className="text-sm">초기 데이터를 불러오는 중입니다…</span>
-        </div>
+        </Card>
       )}
 
       {!loading && !currentRecommendation && !question && (
-        <div className="mx-4 mt-20 rounded-3xl bg-white p-8 text-center shadow">
-          <p className="text-base text-gray-600">추천 가능한 결과가 없습니다. 취향을 업데이트하거나 잠시 후 다시 시도해 주세요.</p>
-        </div>
+        <Card tone="soft" className="p-8 text-center text-base text-gray-600">
+          추천 가능한 결과가 없습니다. 취향을 업데이트하거나 잠시 후 다시 시도해 주세요.
+        </Card>
       )}
 
       {question && (
-        <section className="mx-4 mt-6 rounded-3xl border border-blue-100 bg-white p-5 shadow-sm">
-          <div className="text-xs font-semibold text-blue-500">맞춤 질문</div>
-          <div className="mt-2 text-base font-semibold text-gray-900">{question.question}</div>
-          <div className="mt-4 grid grid-cols-2 gap-3">
+        <Card tone="soft" className="space-y-4 p-5">
+          <div className="text-xs font-semibold text-brand">맞춤 질문</div>
+          <div className="text-base font-semibold text-gray-900">{question.question}</div>
+          <div className="grid grid-cols-2 gap-3">
             {question.options.map((option) => (
               <button
                 key={option}
                 onClick={() => handleAnswer(option)}
-                className="rounded-2xl bg-blue-50 px-3 py-3 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
-                style={{ minHeight: 48 }}
+                className="h-12 rounded-xl border border-brand-light/60 bg-white px-3 text-sm font-medium text-brand shadow-sm transition-colors hover:bg-brand-pale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-light"
               >
                 {option}
               </button>
             ))}
           </div>
-        </section>
+        </Card>
       )}
 
       {currentRecommendation && (
-        <main className="mx-4 mt-6 rounded-3xl bg-white p-6 shadow">
+        <Card tone="lifted" className="space-y-4 p-6">
           <div className="flex items-start justify-between gap-3">
             <h2 className="text-2xl font-bold text-gray-900">{currentRecommendation.restaurant.name}</h2>
-            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+            <span className="rounded-full border border-brand-light/60 bg-brand/10 px-3 py-1 text-xs font-semibold text-brand">
               ETA {currentRecommendation.etaMins}분
             </span>
           </div>
 
-          <div className="mt-3 space-y-3">
+          <div className="space-y-3">
             {displayReasons.map((reason) => (
               <div
                 key={`${reason.badge}-${reason.source}`}
-                className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3"
+                className="rounded-xl border border-brand-light/60 bg-white p-4 shadow-sm"
               >
-                <div className="text-xs font-semibold text-blue-700">{reason.badge}</div>
-                {reason.detail && <p className="mt-1 text-xs text-blue-900">{reason.detail}</p>}
+                <div className="text-xs font-semibold text-brand">{reason.badge}</div>
+                {reason.detail && <p className="mt-1 text-xs text-brand">{reason.detail}</p>}
                 {reason.source && reason.source !== 'local' && (
-                  <div className="mt-2 text-[10px] uppercase tracking-wide text-blue-400">{reason.source}</div>
+                  <div className="mt-2 text-[10px] uppercase tracking-wide text-brand/80">{reason.source}</div>
                 )}
               </div>
             ))}
@@ -459,14 +450,14 @@ export default function HomePage(): JSX.Element {
 
           {currentRecommendation.restaurant.categoryStrength === 'leaf' &&
             (currentRecommendation.restaurant.menuTags?.length ?? 0) > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center rounded-full border border-brand-light/60 bg-brand/10 px-3 py-1 text-xs font-semibold text-brand">
                   업종 기반
                 </span>
               </div>
             )}
 
-          <div className="mt-4 space-y-2 rounded-2xl bg-gray-50 p-4 text-sm text-gray-700">
+          <div className="rounded-xl border border-brand-light/60 bg-white p-4 text-sm text-gray-700 shadow-sm">
             <div className="flex justify-between">
               <span>분류</span>
               <span>{currentRecommendation.restaurant.category}</span>
@@ -483,34 +474,29 @@ export default function HomePage(): JSX.Element {
             </div>
           </div>
 
-          <div className="mt-6 flex items-center gap-3">
-            <button
-              onClick={handleDislike}
-              className={`${touchButtonClass} flex-1 bg-red-500 text-white hover:bg-red-600`}
-            >
+          <div className="flex items-center gap-3">
+            <Button variant="critical" fullWidth className="gap-2" onClick={handleDislike}>
               <ThumbsDown size={18} />
               패스
-            </button>
-            <button
-              onClick={openMap}
-              className={`${touchButtonClass} flex w-14 items-center justify-center bg-yellow-400 text-white hover:bg-yellow-500`}
+            </Button>
+            <Button
+              variant="secondary"
+              className="w-12 px-0 text-brand"
               aria-label="지도 열기"
+              onClick={openMap}
             >
               <MapPin size={18} />
-            </button>
-            <button
-              onClick={handleLike}
-              className={`${touchButtonClass} flex-1 bg-green-500 text-white hover:bg-green-600`}
-            >
+            </Button>
+            <Button variant="primary" fullWidth className="gap-2" onClick={handleLike}>
               <ThumbsUp size={18} />
               좋아요
-            </button>
+            </Button>
           </div>
 
-          <div className="mt-4 text-center text-xs text-gray-500">
+          <div className="text-center text-xs text-brand/80">
             {Math.min(5, recommendations.length)}개 중 1번째 추천
           </div>
-        </main>
+        </Card>
       )}
     </div>
   )

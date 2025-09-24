@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { ThumbsUp, ThumbsDown, Star, CheckCircle2 } from 'lucide-react'
+import { Card } from '../_components/Card'
+import { Button } from '../_components/Button'
 import { getVisits, getPendingReview, clearPendingReview, addVisit } from '../../../lib/store'
 import type { Visit, Restaurant } from '../../../lib/types'
 
@@ -75,15 +77,17 @@ export default function HistoryPage(): JSX.Element {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 pb-24 pt-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">방문 기록</h1>
-        {pending && <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-600">평가 작성</span>}
-      </div>
-      <p className="mt-1 text-sm text-gray-500">좋아요·패스 기록과 평가 요청을 확인하세요.</p>
+    <div className="section space-y-4">
+      <Card tone="soft" className="space-y-2 p-5">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">방문 기록</h1>
+          {pending && <span className="rounded-full border border-brand-light/60 bg-brand/10 px-3 py-1 text-xs font-semibold text-brand">평가 작성</span>}
+        </div>
+        <p className="text-sm text-gray-500">좋아요·패스 기록과 평가 요청을 확인하세요.</p>
+      </Card>
 
       {pending && pendingRestaurant && (
-        <section className="mt-6 rounded-3xl bg-white p-6 shadow">
+        <Card tone="lifted" className="p-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">평가 대기 중</h2>
@@ -93,13 +97,13 @@ export default function HistoryPage(): JSX.Element {
           </div>
 
           <div className="mt-4 flex items-center gap-2 text-sm">
-            <span className="text-gray-600">만족도</span>
+            <span className="text-brand/80">만족도</span>
             {[1, 2, 3, 4, 5].map((value) => (
               <button
                 key={value}
                 onClick={() => setRating(value)}
                 className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
-                  rating >= value ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-200 bg-gray-50 text-gray-500'
+                  rating >= value ? 'border-brand bg-brand text-white' : 'border-brand-light/60 bg-white text-brand/60'
                 }`}
               >
                 <Star size={16} />
@@ -108,19 +112,19 @@ export default function HistoryPage(): JSX.Element {
           </div>
 
           <div className="mt-4 flex items-center gap-2 text-sm">
-            <span className="text-gray-600">재방문</span>
+            <span className="text-brand/80">재방문</span>
             <button
               onClick={() => setWouldReturn(true)}
-              className={`rounded-2xl px-4 py-2 text-sm font-medium transition-colors ${
-                wouldReturn === true ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              className={`rounded-full border px-5 py-2 text-sm font-medium transition-colors ${
+                wouldReturn === true ? 'border-brand bg-brand text-white' : 'border-brand-light/60 bg-white text-brand hover:bg-brand-pale'
               }`}
             >
               있다
             </button>
             <button
               onClick={() => setWouldReturn(false)}
-              className={`rounded-2xl px-4 py-2 text-sm font-medium transition-colors ${
-                wouldReturn === false ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              className={`rounded-full border px-5 py-2 text-sm font-medium transition-colors ${
+                wouldReturn === false ? 'border-critical/60 bg-critical text-white' : 'border-brand-light/60 bg-white text-brand hover:bg-brand-pale'
               }`}
             >
               없다
@@ -136,8 +140,8 @@ export default function HistoryPage(): JSX.Element {
                   <button
                     key={tag}
                     onClick={() => toggleTag(tag)}
-                    className={`rounded-full px-3 py-2 text-xs font-medium transition-colors ${
-                      active ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    className={`rounded-full border px-4 py-2 text-xs font-medium transition-colors ${
+                      active ? 'border-brand bg-brand text-white' : 'border-brand-light/60 bg-white text-brand hover:bg-brand-pale'
                     }`}
                   >
                     {tag}
@@ -148,32 +152,26 @@ export default function HistoryPage(): JSX.Element {
           </div>
 
           <div className="mt-6 flex gap-3">
-            <button
-              onClick={submitPending}
-              className="flex-1 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-            >
+            <Button onClick={submitPending} className="flex-1 gap-2">
               평가 제출
-            </button>
-            <button
-              onClick={cancelPending}
-              className="rounded-2xl border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-600 hover:bg-gray-100"
-            >
+            </Button>
+            <Button variant="secondary" onClick={cancelPending} className="px-6">
               나중에
-            </button>
+            </Button>
           </div>
-        </section>
+        </Card>
       )}
 
-      <section className="mt-8 space-y-3">
+      <section className="space-y-3">
         {visitCards.length === 0 ? (
-          <div className="rounded-3xl bg-white p-6 text-center text-sm text-gray-500 shadow">
+          <Card tone="soft" className="p-6 text-center text-sm text-gray-500">
             아직 기록이 없습니다. 추천에서 좋아요 또는 패스를 눌러 주세요.
-          </div>
+          </Card>
         ) : (
           visitCards.map(({ visit, restaurant }) => {
             if (!restaurant) return null
             return (
-              <article key={`${visit.restaurantId}-${visit.timestamp}`} className="rounded-3xl bg-white p-5 shadow">
+              <Card key={`${visit.restaurantId}-${visit.timestamp}`} tone="soft" className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">{restaurant.name}</h3>
@@ -183,26 +181,26 @@ export default function HistoryPage(): JSX.Element {
                 </div>
                 <div className="mt-4 flex items-center gap-2 text-sm">
                   {visit.liked ? (
-                    <span className="flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-green-600">
+                    <span className="flex items-center gap-1 rounded-full border border-brand-light/60 bg-brand/10 px-3 py-1 text-brand">
                       <ThumbsUp size={16} /> 좋아요
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 rounded-full bg-red-50 px-3 py-1 text-red-600">
+                    <span className="flex items-center gap-1 rounded-full border border-critical/30 bg-critical/10 px-3 py-1 text-critical">
                       <ThumbsDown size={16} /> 패스
                     </span>
                   )}
                   {visit.reason && (
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs text-blue-600">{visit.reason}</span>
+                    <span className="rounded-full border border-brand-light/60 bg-white px-3 py-1 text-xs text-brand shadow-sm">{visit.reason}</span>
                   )}
                 </div>
-              </article>
+              </Card>
             )
           })
         )}
       </section>
 
       {toast && (
-        <div className="fixed bottom-24 left-0 right-0 mx-auto flex max-w-[320px] items-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm text-white shadow-lg">
+        <div className="fixed bottom-24 left-0 right-0 mx-auto flex max-w-[320px] items-center gap-2 rounded-full bg-brand px-5 py-3 text-sm text-white shadow-lg">
           <CheckCircle2 size={18} />
           <span>{toast}</span>
         </div>

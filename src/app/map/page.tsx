@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Card } from '../_components/Card';
 
 declare global {
   interface Window {
@@ -54,51 +55,45 @@ export default function MapPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-md mx-auto">
-          <h1 className="text-2xl font-bold text-center mb-6">지도</h1>
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+      <div className="section space-y-4">
+        <Card tone="lifted" className="space-y-4 p-6 text-center">
+          <h1 className="text-2xl font-bold text-gray-900">지도</h1>
+          <div className="rounded-xl border border-critical/40 bg-critical/10 px-4 py-3 text-critical">
             <p>{error}</p>
           </div>
-          <div className="mt-6 text-center">
-            <a
-              href="/"
-              className="bg-blue-500 text-white py-2 px-6 rounded hover:bg-blue-600"
-            >
-              홈으로
-            </a>
-          </div>
-        </div>
+          <a
+            href="/"
+            className="inline-flex items-center justify-center rounded-full border border-brand px-6 py-3 text-sm font-semibold text-brand shadow-card hover:bg-brand/10"
+          >
+            홈으로
+          </a>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-center mb-6">지도</h1>
+    <div className="section space-y-4">
+      <Card tone="soft" className="space-y-2 p-6 text-center">
+        <h1 className="text-2xl font-bold text-gray-900">지도</h1>
+        {loading && <div className="text-brand">로딩</div>}
+      </Card>
 
-        {loading && (
-          <div className="text-center mb-4">
-            <div className="text-lg">로딩</div>
-          </div>
-        )}
-
+      <Card tone="lifted" className="p-3">
         <div
           ref={mapContainer}
-          className="w-full bg-gray-200 rounded-lg"
-          style={{ height: '70vh' }}
+          className="h-[70vh] w-full rounded-xl border border-brand-light/60 bg-brand-pale"
         />
+      </Card>
 
-        <div className="mt-6 text-center">
-          <a
-            href="/"
-            className="bg-blue-500 text-white py-2 px-6 rounded hover:bg-blue-600"
-          >
-            홈으로
-          </a>
-        </div>
-      </div>
+      <Card tone="soft" className="p-4 text-center">
+        <a
+          href="/"
+          className="inline-flex items-center justify-center rounded-full border border-brand px-6 py-3 text-sm font-semibold text-brand shadow-card hover:bg-brand/10"
+        >
+          홈으로
+        </a>
+      </Card>
     </div>
   );
 }
