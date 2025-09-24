@@ -7,7 +7,7 @@ import { Button } from '../_components/Button'
 import { getVisits, getPendingReview, clearPendingReview, addVisit } from '../../../lib/store'
 import type { Visit, Restaurant } from '../../../lib/types'
 
-export default function HistoryPage(): JSX.Element {
+export default function HistoryPage(): React.ReactElement {
   const [visits, setVisits] = useState<Visit[]>([])
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [pending, setPending] = useState<{ placeId: string; decidedAt: number } | null>(null)

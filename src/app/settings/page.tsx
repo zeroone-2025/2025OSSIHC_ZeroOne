@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '../_components/Card'
 
-export default function SettingsPage(): JSX.Element {
+export default function SettingsPage(): React.ReactElement {
   const router = useRouter()
 
   useEffect(() => {

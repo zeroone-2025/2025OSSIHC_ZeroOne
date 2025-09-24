@@ -13,7 +13,7 @@ const toneMap: Record<CardTone, string> = {
   lifted: 'shadow-lg',
 }
 
-export function Card({ children, className = '', tone = 'default' }: CardProps): JSX.Element {
+export function Card({ children, className = '', tone = 'default' }: CardProps): React.ReactElement {
   const toneClass = toneMap[tone] ?? toneMap.default
   return (
     <div className={`rounded-xl border border-brand-sub1/40 bg-white ${toneClass} ${className}`}>

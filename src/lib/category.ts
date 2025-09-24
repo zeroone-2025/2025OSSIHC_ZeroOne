@@ -1,4 +1,4 @@
-import categoryMap from '../../public/data/category_map.ko.json'
+import categoryMap from '../data/category_map.ko.json'
 
 export type CategoryStrength = 'leaf' | 'mid' | 'none'
 
