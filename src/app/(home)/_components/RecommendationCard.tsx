@@ -1,5 +1,6 @@
 "use client"
 
+import React, { type ReactElement } from 'react';
 import { MapPin, ThumbsDown, ThumbsUp } from 'lucide-react'
 import type { RecommendationResult } from '../../../../lib/types'
 import { Card } from '../../_components/Card'
@@ -29,7 +30,7 @@ export function RecommendationCard({
   onNavigate,
   onOpenMap,
   footer,
-}: RecommendationCardProps): JSX.Element {
+}: RecommendationCardProps): ReactElement {
   const { restaurant, etaMins } = recommendation
 
   return (

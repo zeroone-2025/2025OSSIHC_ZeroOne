@@ -1,10 +1,11 @@
 'use client'
 
+import React from "react";
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, UserCircle } from 'lucide-react'
 
-export function BottomNav(): JSX.Element {
+export function BottomNav(): React.ReactElement {
   const pathname = usePathname()
 
   return (

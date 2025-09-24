@@ -26,7 +26,7 @@ export function Button({
   fullWidth = false,
   type = 'button',
   ...props
-}: ButtonProps): JSX.Element {
+}: ButtonProps): React.ReactElement {
   const variantClass = variantMap[variant] ?? variantMap.primary
   const widthClass = fullWidth ? 'w-full' : ''
   const iconSizing = variant === 'icon' ? '' : ''

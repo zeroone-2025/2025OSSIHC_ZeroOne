@@ -26,7 +26,7 @@ export interface LLMReason {
   source: string
 }
 
-export default function HomePage(): JSX.Element {
+export default function HomePage(): React.ReactElement {
   const [state, dispatch] = useReducer(
     reducer,
     undefined,
@@ -236,7 +236,7 @@ export default function HomePage(): JSX.Element {
   const weatherBadges = useMemo(() => {
     const target = state.weather
     if (!target) return []
-    const badges: Array<{ icon: JSX.Element; text: string }> = []
+    const badges: Array<{ icon: React.ReactElement; text: string }> = []
     const temperature = Math.round(target.T1H ?? target.TMP ?? 15)
     badges.push({ icon: <Thermometer size={14} />, text: `${temperature}°C` })
     if (target.RN1 || target.PCP || target.flags.wet) {

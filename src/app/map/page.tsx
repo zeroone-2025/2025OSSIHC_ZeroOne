@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Card } from '../_components/Card';
+import Link from 'next/link'
 
 declare global {
   interface Window {
@@ -61,12 +62,12 @@ export default function MapPage() {
           <div className="rounded-xl border border-critical/40 bg-critical/10 px-4 py-3 text-critical">
             <p>{error}</p>
           </div>
-          <a
+          <Link
             href="/"
             className="inline-flex items-center justify-center rounded-full border border-brand-sub1 px-6 py-3 text-sm font-semibold text-brand-sub1 shadow-card hover:bg-brand-sub2/30"
           >
             홈으로
-          </a>
+          </Link>
         </Card>
       </div>
     );
@@ -87,12 +88,12 @@ export default function MapPage() {
       </Card>
 
       <Card tone="soft" className="p-4 text-center">
-        <a
+        <Link
           href="/"
           className="inline-flex items-center justify-center rounded-full border border-brand-sub1 px-6 py-3 text-sm font-semibold text-brand-sub1 shadow-card hover:bg-brand-sub2/30"
         >
           홈으로
-        </a>
+        </Link>
       </Card>
     </div>
   );

@@ -11,7 +11,7 @@ interface OptionList {
   value: string
 }
 
-export default function ProfilePage(): JSX.Element {
+export default function ProfilePage(): React.ReactElement {
   const [prefs, setPrefs] = useState<Pref>({ allergies: [], dislikes: [], weather: true })
   const [allergyOptions, setAllergyOptions] = useState<OptionList[]>([])
   const [dislikeOptions, setDislikeOptions] = useState<OptionList[]>([])

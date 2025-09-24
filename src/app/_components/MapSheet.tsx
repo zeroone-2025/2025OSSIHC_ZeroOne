@@ -11,7 +11,7 @@ interface MapSheetProps {
   target: RecommendationResult | null
 }
 
-export function MapSheet({ open, onClose, target }: MapSheetProps): JSX.Element | null {
+export function MapSheet({ open, onClose, target }: MapSheetProps): React.ReactElement | null {
   if (!open || !target) return null
 
   const { restaurant } = target
