@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply min-h-screen bg-brand-bg text-[#1f1f1f];
+}
+
+/* Use `bg-white` for cards and lay them over `bg-brand-bg` sections to preserve depth. */
+/* Card base: bg-white rounded-xl border border-brand-sub1/40 shadow-card */
+
+.section {
+  margin: 1.5rem 0;
+}
+
+a {
+  color: #FA812F;
+  text-decoration: none;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid #FA812F;
+  outline-offset: 2px;
+}
