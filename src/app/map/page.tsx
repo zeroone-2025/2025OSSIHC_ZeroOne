@@ -63,7 +63,7 @@ export default function MapPage() {
           </div>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-full border border-brand px-6 py-3 text-sm font-semibold text-brand shadow-card hover:bg-brand/10"
+            className="inline-flex items-center justify-center rounded-full border border-brand-sub1 px-6 py-3 text-sm font-semibold text-brand-sub1 shadow-card hover:bg-brand-sub2/30"
           >
             홈으로
           </a>
@@ -76,20 +76,20 @@ export default function MapPage() {
     <div className="section space-y-4">
       <Card tone="soft" className="space-y-2 p-6 text-center">
         <h1 className="text-2xl font-bold text-gray-900">지도</h1>
-        {loading && <div className="text-brand">로딩</div>}
+        {loading && <div className="text-brand-sub1">로딩</div>}
       </Card>
 
       <Card tone="lifted" className="p-3">
         <div
           ref={mapContainer}
-          className="h-[70vh] w-full rounded-xl border border-brand-light/60 bg-brand-pale"
+          className="h-[70vh] w-full rounded-xl border border-brand-sub1/60 bg-brand-bg"
         />
       </Card>
 
       <Card tone="soft" className="p-4 text-center">
         <a
           href="/"
-          className="inline-flex items-center justify-center rounded-full border border-brand px-6 py-3 text-sm font-semibold text-brand shadow-card hover:bg-brand/10"
+          className="inline-flex items-center justify-center rounded-full border border-brand-sub1 px-6 py-3 text-sm font-semibold text-brand-sub1 shadow-card hover:bg-brand-sub2/30"
         >
           홈으로
         </a>

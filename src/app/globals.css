@@ -3,12 +3,11 @@
 @tailwind utilities;
 
 body {
-  background-color: #FEF3E2;
-  color: #1f1f1f;
+  @apply min-h-screen bg-brand-bg text-[#1f1f1f];
 }
 
-/* Use `bg-white` for cards and lay them over `bg-brand-pale` sections to preserve depth. */
-/* Card base: bg-white rounded-xl border border-brand-light/40 shadow-card */
+/* Use `bg-white` for cards and lay them over `bg-brand-bg` sections to preserve depth. */
+/* Card base: bg-white rounded-xl border border-brand-sub1/40 shadow-card */
 
 .section {
   margin: 1.5rem 0;

@@ -81,7 +81,7 @@ export default function HistoryPage(): JSX.Element {
       <Card tone="soft" className="space-y-2 p-5">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">방문 기록</h1>
-          {pending && <span className="rounded-full border border-brand-light/60 bg-brand/10 px-3 py-1 text-xs font-semibold text-brand">평가 작성</span>}
+          {pending && <span className="rounded-full border border-brand-sub1/60 bg-brand-sub2/20 px-3 py-1 text-xs font-semibold text-brand-sub1">평가 작성</span>}
         </div>
         <p className="text-sm text-gray-500">좋아요·패스 기록과 평가 요청을 확인하세요.</p>
       </Card>
@@ -97,13 +97,13 @@ export default function HistoryPage(): JSX.Element {
           </div>
 
           <div className="mt-4 flex items-center gap-2 text-sm">
-            <span className="text-brand/80">만족도</span>
+            <span className="text-brand-sub1/80">만족도</span>
             {[1, 2, 3, 4, 5].map((value) => (
               <button
                 key={value}
                 onClick={() => setRating(value)}
                 className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
-                  rating >= value ? 'border-brand bg-brand text-white' : 'border-brand-light/60 bg-white text-brand/60'
+                  rating >= value ? 'border-brand bg-brand text-white' : 'border-brand-sub1/60 bg-white text-brand-sub1/60'
                 }`}
               >
                 <Star size={16} />
@@ -112,11 +112,11 @@ export default function HistoryPage(): JSX.Element {
           </div>
 
           <div className="mt-4 flex items-center gap-2 text-sm">
-            <span className="text-brand/80">재방문</span>
+            <span className="text-brand-sub1/80">재방문</span>
             <button
               onClick={() => setWouldReturn(true)}
               className={`rounded-full border px-5 py-2 text-sm font-medium transition-colors ${
-                wouldReturn === true ? 'border-brand bg-brand text-white' : 'border-brand-light/60 bg-white text-brand hover:bg-brand-pale'
+                wouldReturn === true ? 'border-brand bg-brand text-white' : 'border-brand-sub1/60 bg-white text-brand-sub1 hover:bg-brand-bg'
               }`}
             >
               있다
@@ -124,7 +124,7 @@ export default function HistoryPage(): JSX.Element {
             <button
               onClick={() => setWouldReturn(false)}
               className={`rounded-full border px-5 py-2 text-sm font-medium transition-colors ${
-                wouldReturn === false ? 'border-critical/60 bg-critical text-white' : 'border-brand-light/60 bg-white text-brand hover:bg-brand-pale'
+                wouldReturn === false ? 'border-brand bg-brand text-white' : 'border-brand-sub1/60 bg-white text-brand-sub1 hover:bg-brand-bg'
               }`}
             >
               없다
@@ -141,7 +141,7 @@ export default function HistoryPage(): JSX.Element {
                     key={tag}
                     onClick={() => toggleTag(tag)}
                     className={`rounded-full border px-4 py-2 text-xs font-medium transition-colors ${
-                      active ? 'border-brand bg-brand text-white' : 'border-brand-light/60 bg-white text-brand hover:bg-brand-pale'
+                      active ? 'border-brand bg-brand text-white' : 'border-brand-sub1/60 bg-white text-brand-sub1 hover:bg-brand-bg'
                     }`}
                   >
                     {tag}
@@ -155,7 +155,7 @@ export default function HistoryPage(): JSX.Element {
             <Button onClick={submitPending} className="flex-1 gap-2">
               평가 제출
             </Button>
-            <Button variant="secondary" onClick={cancelPending} className="px-6">
+            <Button variant="tertiary" onClick={cancelPending} className="px-6">
               나중에
             </Button>
           </div>
@@ -181,7 +181,7 @@ export default function HistoryPage(): JSX.Element {
                 </div>
                 <div className="mt-4 flex items-center gap-2 text-sm">
                   {visit.liked ? (
-                    <span className="flex items-center gap-1 rounded-full border border-brand-light/60 bg-brand/10 px-3 py-1 text-brand">
+                    <span className="flex items-center gap-1 rounded-full border border-brand-sub1/60 bg-brand-sub1/20 px-3 py-1 text-brand-sub1">
                       <ThumbsUp size={16} /> 좋아요
                     </span>
                   ) : (
@@ -190,7 +190,7 @@ export default function HistoryPage(): JSX.Element {
                     </span>
                   )}
                   {visit.reason && (
-                    <span className="rounded-full border border-brand-light/60 bg-white px-3 py-1 text-xs text-brand shadow-sm">{visit.reason}</span>
+                    <span className="rounded-full border border-brand-sub1/60 bg-white px-3 py-1 text-xs text-brand-sub1 shadow-sm">{visit.reason}</span>
                   )}
                 </div>
               </Card>

@@ -16,7 +16,7 @@ const toneMap: Record<CardTone, string> = {
 export function Card({ children, className = '', tone = 'default' }: CardProps): JSX.Element {
   const toneClass = toneMap[tone] ?? toneMap.default
   return (
-    <div className={`rounded-xl border border-brand-light/40 bg-white ${toneClass} ${className}`}>
+    <div className={`rounded-xl border border-brand-sub1/40 bg-white ${toneClass} ${className}`}>
       {children}
     </div>
   )

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { hasOpenAIKey } from '@/lib/env'
-import { chatJson } from '@/lib/openai'
+import { hasGeminiKey } from '@/lib/env'
+import { callGeminiJSON } from '@/lib/gemini'
 import { isValidReasons } from '@/lib/validators'
 
 interface ReasonRequest {
@@ -47,8 +47,8 @@ const SYSTEM_PROMPT = `역할: 점심 추천 근거 생성기.
 {"reasons":[{"badge":"...","detail":"...","source":"weather|eta|novelty|history|trend|allergy|nutrition|group|situation|pref|category"}]}`;
 
 export async function POST(request: NextRequest) {
-  if (!hasOpenAIKey()) {
-    return NextResponse.json({ error: 'NO_OPENAI_KEY' }, { status: 503 })
+  if (!hasGeminiKey()) {
+    return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 })
   }
 
   try {
@@ -73,24 +73,40 @@ export async function POST(request: NextRequest) {
       },
     }
 
-    const result = await chatJson(
-      [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: JSON.stringify(payload) },
-      ],
-      { maxTokens: 500 }
-    )
+    const prompt = `${SYSTEM_PROMPT}\n\n[추천 컨텍스트]\n${JSON.stringify(payload)}`
+
+    const result = await callGeminiJSON(prompt)
 
     if (!isValidReasons(result)) {
-      throw new Error('INVALID_OPENAI_JSON')
+      throw new Error('INVALID_GEMINI_JSON')
     }
 
+    const forbidden = [/최고/gi, /완벽/gi, /필수/gi, /리뷰/gi]
+
     const normalized: ReasonResponse = {
-      reasons: result.reasons.slice(0, 3).map((reason: ReasonDetail) => ({
-        badge: String(reason.badge).trim().slice(0, 18),
-        detail: String(reason.detail).trim(),
-        source: String(reason.source || 'llm').trim().toLowerCase(),
-      })),
+      reasons: result.reasons
+        .slice(0, 3)
+        .map((reason: ReasonDetail) => ({
+          badge: String(reason.badge).trim().slice(0, 18),
+          detail: String(reason.detail).trim(),
+          source: String(reason.source || 'llm').trim().toLowerCase(),
+        }))
+        .map((reason) => ({
+          ...reason,
+          badge: forbidden.reduce((value, pattern) => value.replace(pattern, ''), reason.badge).trim(),
+          detail: forbidden.reduce((value, pattern) => value.replace(pattern, ''), reason.detail).trim(),
+        }))
+        .filter((reason) => Boolean(reason.badge) && Boolean(reason.detail)),
+    }
+
+    if (!normalized.reasons.length) {
+      normalized.reasons = [
+        {
+          badge: '근거 생성 실패',
+          detail: 'LLM 응답 없음',
+          source: 'fallback',
+        },
+      ]
     }
 
     return NextResponse.json(normalized, {
@@ -99,13 +115,21 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    if ((error as Error).message === 'NO_OPENAI_KEY') {
-      return NextResponse.json({ error: 'NO_OPENAI_KEY' }, { status: 503 })
+    if ((error as Error).message === 'Gemini API key missing') {
+      return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 })
     }
 
     console.error('LLM reason generation failed:', error)
-    const message = error instanceof Error ? error.message : 'LLM 근거 생성 실패'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({
+      reasons: [
+        {
+          badge: '근거 생성 실패',
+          detail: 'LLM 응답 없음',
+          source: 'fallback',
+        },
+      ],
+      error: error instanceof Error ? error.message : 'LLM 근거 생성 실패',
+    })
   }
 }
 

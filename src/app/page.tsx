@@ -1,9 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
-import { ThumbsUp, ThumbsDown, MapPin, Cloud, Thermometer, Wind, RotateCcw } from 'lucide-react'
+import { Cloud, Thermometer, Wind, RotateCcw } from 'lucide-react'
+import Link from 'next/link'
 import { Card } from './_components/Card'
 import { Button } from './_components/Button'
+import { MapSheet } from './_components/MapSheet'
+import { RecommendationCard } from './(home)/_components/RecommendationCard'
 import type { RecommendationResult, WeatherSnapshot } from '../../lib/types'
 import { addVisit } from '../../lib/store'
 import { boot, askNext, applyAnswer, finalize, scheduleReview } from '../../lib/flow'
@@ -17,7 +20,7 @@ interface ToastState {
   tone: 'info' | 'warning' | 'error'
 }
 
-interface LLMReason {
+export interface LLMReason {
   badge: string
   detail: string
   source: string
@@ -37,6 +40,7 @@ export default function HomePage(): JSX.Element {
   const [bootError, setBootError] = useState<string | null>(null)
   const [llmUnavailable, setLlmUnavailable] = useState(false)
   const [reasonsByRestaurant, setReasonsByRestaurant] = useState<Record<string, LLMReason[]>>({})
+  const [mapTarget, setMapTarget] = useState<RecommendationResult | null>(null)
 
   const bootedRef = useRef(false)
   const reasonsInFlight = useRef<Set<string>>(new Set())
@@ -129,8 +133,8 @@ export default function HomePage(): JSX.Element {
     ? toast.tone === 'error'
       ? 'border-critical/40 text-critical'
       : toast.tone === 'warning'
-      ? 'border-brand/60 text-brand'
-      : 'border-brand-light/60 text-brand'
+      ? 'border-brand-sub1/60 text-brand-sub1'
+      : 'border-brand-sub2/60 text-brand-sub1'
     : ''
 
   const fetchReasons = useCallback(
@@ -351,23 +355,39 @@ export default function HomePage(): JSX.Element {
     window.open(kakaoUrl, '_blank', 'noopener,noreferrer')
   }, [currentRecommendation])
 
+  const handleOpenMapSheet = useCallback(() => {
+    if (!currentRecommendation) return
+    setMapTarget(currentRecommendation)
+  }, [currentRecommendation])
+
+  const handleCloseMapSheet = useCallback(() => {
+    setMapTarget(null)
+  }, [])
+
   return (
-    <div className="section space-y-4">
-      <Card tone="soft" className="flex items-center justify-end p-3">
-        <Button
-          aria-label="세션 초기화"
-          variant="secondary"
-          className="w-12 px-0 text-brand"
-          onClick={handleReset}
+    <>
+      <div className="section space-y-4">
+      <Card tone="soft" className="relative flex items-center gap-3 p-4">
+        <Link
+          href="/history"
+          className="inline-flex h-11 items-center justify-center rounded-full border border-brand-sub1/60 bg-white px-5 text-sm font-semibold text-brand-sub1 shadow-sm transition-colors hover:bg-brand-bg"
         >
-          <RotateCcw size={18} />
-        </Button>
+          기록 보기
+        </Link>
+        <button
+          type="button"
+          aria-label="세션 초기화"
+          onClick={handleReset}
+          className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-brand-sub1/60 bg-white text-brand shadow-sm hover:bg-brand-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sub1/60"
+        >
+          <RotateCcw className="h-8 w-8" />
+        </button>
       </Card>
 
       {state.weather && (
-        <Card tone="soft" className="flex flex-wrap gap-2 p-4 text-xs text-brand">
+        <Card tone="soft" className="flex flex-wrap gap-2 p-4 text-xs text-brand-sub1">
           {weatherBadges.map((badge, idx) => (
-            <span key={idx} className="inline-flex items-center gap-1 rounded-full border border-brand-light/60 bg-white px-3 py-1 shadow-sm">
+            <span key={idx} className="inline-flex items-center gap-1 rounded-full border border-brand-sub2/60 bg-white px-3 py-1 shadow-sm text-brand-sub1">
               {badge.icon}
               {badge.text}
             </span>
@@ -395,7 +415,7 @@ export default function HomePage(): JSX.Element {
 
       {loading && (
         <Card tone="soft" className="flex flex-col items-center justify-center gap-3 p-6 text-brand">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand-pale border-t-brand" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand-bg border-t-brand" />
           <span className="text-sm">초기 데이터를 불러오는 중입니다…</span>
         </Card>
       )}
@@ -415,7 +435,7 @@ export default function HomePage(): JSX.Element {
               <button
                 key={option}
                 onClick={() => handleAnswer(option)}
-                className="h-12 rounded-xl border border-brand-light/60 bg-white px-3 text-sm font-medium text-brand shadow-sm transition-colors hover:bg-brand-pale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-light"
+                className="h-12 rounded-xl border border-brand-sub1/60 bg-white px-3 text-sm font-medium text-brand-sub1 shadow-sm transition-colors hover:bg-brand-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sub1"
               >
                 {option}
               </button>
@@ -425,80 +445,19 @@ export default function HomePage(): JSX.Element {
       )}
 
       {currentRecommendation && (
-        <Card tone="lifted" className="space-y-4 p-6">
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="text-2xl font-bold text-gray-900">{currentRecommendation.restaurant.name}</h2>
-            <span className="rounded-full border border-brand-light/60 bg-brand/10 px-3 py-1 text-xs font-semibold text-brand">
-              ETA {currentRecommendation.etaMins}분
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            {displayReasons.map((reason) => (
-              <div
-                key={`${reason.badge}-${reason.source}`}
-                className="rounded-xl border border-brand-light/60 bg-white p-4 shadow-sm"
-              >
-                <div className="text-xs font-semibold text-brand">{reason.badge}</div>
-                {reason.detail && <p className="mt-1 text-xs text-brand">{reason.detail}</p>}
-                {reason.source && reason.source !== 'local' && (
-                  <div className="mt-2 text-[10px] uppercase tracking-wide text-brand/80">{reason.source}</div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {currentRecommendation.restaurant.categoryStrength === 'leaf' &&
-            (currentRecommendation.restaurant.menuTags?.length ?? 0) > 0 && (
-              <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center rounded-full border border-brand-light/60 bg-brand/10 px-3 py-1 text-xs font-semibold text-brand">
-                  업종 기반
-                </span>
-              </div>
-            )}
-
-          <div className="rounded-xl border border-brand-light/60 bg-white p-4 text-sm text-gray-700 shadow-sm">
-            <div className="flex justify-between">
-              <span>분류</span>
-              <span>{currentRecommendation.restaurant.category}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>예상 거리</span>
-              <span>{currentRecommendation.etaMins * 80}m ±</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 pt-2 text-xs text-gray-600">
-              <div>칼로리 {currentRecommendation.restaurant.macros.kcal}kcal</div>
-              <div>단백질 {currentRecommendation.restaurant.macros.protein}g</div>
-              <div>지방 {currentRecommendation.restaurant.macros.fat}g</div>
-              <div>탄수화물 {currentRecommendation.restaurant.macros.carb}g</div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button variant="critical" fullWidth className="gap-2" onClick={handleDislike}>
-              <ThumbsDown size={18} />
-              패스
-            </Button>
-            <Button
-              variant="secondary"
-              className="w-12 px-0 text-brand"
-              aria-label="지도 열기"
-              onClick={openMap}
-            >
-              <MapPin size={18} />
-            </Button>
-            <Button variant="primary" fullWidth className="gap-2" onClick={handleLike}>
-              <ThumbsUp size={18} />
-              좋아요
-            </Button>
-          </div>
-
-          <div className="text-center text-xs text-brand/80">
-            {Math.min(5, recommendations.length)}개 중 1번째 추천
-          </div>
-        </Card>
+        <RecommendationCard
+          recommendation={currentRecommendation}
+          reasons={displayReasons}
+          onDislike={handleDislike}
+          onLike={handleLike}
+          onNavigate={openMap}
+          onOpenMap={handleOpenMapSheet}
+          footer={`${Math.min(5, recommendations.length)}개 중 1번째 추천`}
+        />
       )}
-    </div>
+      </div>
+      <MapSheet open={Boolean(mapTarget)} onClose={handleCloseMapSheet} target={mapTarget} />
+    </>
   )
 }
 

@@ -76,19 +76,19 @@ export default function ProfilePage(): JSX.Element {
     <div className="section space-y-4">
       <Card tone="soft" className="space-y-2 p-5">
         <h1 className="text-2xl font-bold text-gray-900">개인 프로필</h1>
-        <p className="text-sm text-brand/80">식사 모드와 인원수는 LLM 질문에서 자동 수집합니다.</p>
+        <p className="text-sm text-brand-sub1/80">식사 모드와 인원수는 LLM 질문에서 자동 수집합니다.</p>
       </Card>
 
       <Card tone="lifted" className="p-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">날씨 반영</h2>
-            <p className="text-sm text-brand/80">비·강풍 시 가까운 식당을 우선합니다.</p>
+            <p className="text-sm text-brand-sub1/80">비·강풍 시 가까운 식당을 우선합니다.</p>
           </div>
           <button
             onClick={toggleWeather}
             className={`relative inline-flex h-8 w-14 items-center rounded-full border transition-colors ${
-              prefs.weather ? 'border-brand bg-brand' : 'border-brand-light/60 bg-white'
+              prefs.weather ? 'border-brand bg-brand' : 'border-brand-sub1/60 bg-white'
             }`}
             aria-pressed={prefs.weather}
           >
@@ -103,7 +103,7 @@ export default function ProfilePage(): JSX.Element {
 
       <Card tone="soft" className="p-6">
         <h2 className="text-lg font-semibold text-gray-900">알레르기</h2>
-        <p className="text-sm text-brand/80">선택한 알레르기 재료는 추천에서 제외합니다.</p>
+        <p className="text-sm text-brand-sub1/80">선택한 알레르기 재료는 추천에서 제외합니다.</p>
         <div className="mt-3 grid grid-cols-2 gap-3">
           {allergyOptions.map((option) => {
             const active = prefs.allergies.includes(option.value)
@@ -112,7 +112,7 @@ export default function ProfilePage(): JSX.Element {
                 key={option.value}
                 onClick={() => toggleAllergy(option.value)}
                 className={`rounded-full border px-5 py-3 text-sm font-medium transition-all ${
-                  active ? 'border-brand bg-brand text-white shadow-sm' : 'border-brand-light/60 bg-white text-brand hover:bg-brand-pale'
+                  active ? 'border-brand bg-brand text-white shadow-sm' : 'border-brand-sub1/60 bg-white text-brand-sub1 hover:bg-brand-bg'
                 }`}
                 style={{ minHeight: 48 }}
               >
@@ -125,7 +125,7 @@ export default function ProfilePage(): JSX.Element {
 
       <Card tone="soft" className="p-6">
         <h2 className="text-lg font-semibold text-gray-900">비선호 음식</h2>
-        <p className="text-sm text-brand/80">선택한 비선호 태그는 추천 시 감점합니다.</p>
+        <p className="text-sm text-brand-sub1/80">선택한 비선호 태그는 추천 시 감점합니다.</p>
         <div className="mt-3 grid grid-cols-2 gap-3">
           {dislikeOptions.map((option) => {
             const active = prefs.dislikes.includes(option.value)
@@ -134,7 +134,7 @@ export default function ProfilePage(): JSX.Element {
                 key={option.value}
                 onClick={() => toggleDislike(option.value)}
                 className={`rounded-full border px-5 py-3 text-sm font-medium transition-all ${
-                  active ? 'border-brand bg-brand text-white shadow-sm' : 'border-brand-light/60 bg-white text-brand hover:bg-brand-pale'
+                  active ? 'border-brand bg-brand text-white shadow-sm' : 'border-brand-sub1/60 bg-white text-brand-sub1 hover:bg-brand-bg'
                 }`}
                 style={{ minHeight: 48 }}
               >

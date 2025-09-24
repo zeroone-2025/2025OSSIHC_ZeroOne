@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hasOpenAIKey } from '@/lib/env';
-import { chatJson } from '@/lib/openai';
+import { hasGeminiKey } from '@/lib/env';
+import { callGeminiJSON } from '@/lib/gemini';
 
 interface QuestionRequest {
   session: {
@@ -28,8 +28,8 @@ const SYSTEM_PROMPT = `역할: 점심 추천 질문 생성기.
 5. 출력은 JSON 한 줄: {"qId":"q-타임스탬프","intent":"intent","question":"질문","options":[...]}`;
 
 export async function POST(request: NextRequest) {
-  if (!hasOpenAIKey()) {
-    return NextResponse.json({ error: 'NO_OPENAI_KEY' }, { status: 503 })
+  if (!hasGeminiKey()) {
+    return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 })
   }
 
   try {
@@ -45,13 +45,9 @@ export async function POST(request: NextRequest) {
       },
     }
 
-    const data = await chatJson(
-      [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: JSON.stringify(userPayload) },
-      ],
-      { maxTokens: 350 }
-    )
+    const prompt = `${SYSTEM_PROMPT}\n\n[사용자 입력]\n${JSON.stringify(userPayload)}`
+
+    const data = await callGeminiJSON(prompt)
 
     validateResponse(data)
 
@@ -68,8 +64,8 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    if ((error as Error).message === 'NO_OPENAI_KEY') {
-      return NextResponse.json({ error: 'NO_OPENAI_KEY' }, { status: 503 })
+    if ((error as Error).message === 'Gemini API key missing') {
+      return NextResponse.json({ error: 'Gemini API key missing' }, { status: 500 })
     }
 
     console.error('LLM question generation failed:', error)
@@ -106,14 +102,14 @@ function validateRequest(candidate: unknown): asserts candidate is QuestionReque
 
 function validateResponse(payload: any): asserts payload is QuestionResponse {
   if (!payload || typeof payload !== 'object') {
-    throw new Error('INVALID_OPENAI_JSON')
+    throw new Error('INVALID_GEMINI_JSON')
   }
 
   if (typeof payload.qId !== 'string' || typeof payload.intent !== 'string' || typeof payload.question !== 'string') {
-    throw new Error('INVALID_OPENAI_JSON')
+    throw new Error('INVALID_GEMINI_JSON')
   }
 
   if (!Array.isArray(payload.options) || payload.options.length === 0) {
-    throw new Error('INVALID_OPENAI_JSON')
+    throw new Error('INVALID_GEMINI_JSON')
   }
 }
