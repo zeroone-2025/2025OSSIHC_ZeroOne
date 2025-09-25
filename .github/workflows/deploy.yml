@@ -3,7 +3,7 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - main   # main ºê·£Ä¡¿¡ pushµÉ ¶§¸¸ ½ÇÇà
+      - main   # main ï¿½ê·£Ä¡ï¿½ï¿½ pushï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
 jobs:
   deploy:
@@ -30,7 +30,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-		  port: ${{ secrets.SSH_PORT }}
+          port: ${{ secrets.SSH_PORT }}
           script: |
             cd /var/www/whymeal/2025OSSIHC_ZeroOne
             git pull origin main
