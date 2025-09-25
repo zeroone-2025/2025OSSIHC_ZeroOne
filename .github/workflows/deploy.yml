@@ -32,6 +32,12 @@ jobs:
           command_timeout: 10m
           script: |
             set -e
+            # --- FIX STARTS HERE ---
+            # Load nvm (Node Version Manager) environment to use node and npm
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            # --- FIX ENDS HERE ---
+            
             cd /var/www/whymeal/2025OSSIHC_ZeroOne
             git fetch --all
             git reset --hard origin/main
