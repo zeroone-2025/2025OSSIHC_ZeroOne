@@ -38,15 +38,15 @@ jobs:
             cd /var/www/whymeal/2025OSSIHC_ZeroOne
             git fetch --all
             git reset --hard origin/main
-
-            # --- BEST PRACTICE: Clean previous build cache ---
+            
             rm -rf .next 
-            # --- END OF BEST PRACTICE ---
 
             if [ -f package-lock.json ]; then
-              npm ci --omit=dev
+              # --- FIX: Removed --omit=dev to install build-time dependencies ---
+              npm ci
             else
-              npm install --production
+              # --- FIX: Removed --production flag ---
+              npm install
             fi
             
             NODE_ENV=production npm run build
