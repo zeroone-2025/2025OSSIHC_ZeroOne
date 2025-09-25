@@ -11,14 +11,20 @@ export function getEnv(name: string): string {
   return value
 }
 
+export function hasOpenAIKey(): boolean {
+  return Boolean(readEnv('OPENAI_API_KEY'))
+}
+
+export function ensureOpenAI(): void {
+  if (!hasOpenAIKey()) {
+    throw new Error('NO_OPENAI_KEY')
+  }
+}
+
 export function hasWeatherKey(): boolean {
   return Boolean(readEnv('WEATHER_API_KEY') ?? readEnv('WEATHER_AUTH_KEY'))
 }
 
 export function hasKakaoKey(): boolean {
   return Boolean(readEnv('KAKAO_API_KEY') ?? readEnv('NEXT_PUBLIC_KAKAO_JS_KEY'))
-}
-
-export function hasGeminiKey(): boolean {
-  return Boolean(process.env.GOOGLE_GEMINI_API_KEY)
 }

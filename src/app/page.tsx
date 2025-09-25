@@ -6,6 +6,9 @@ import Link from 'next/link'
 import { Card } from './_components/Card'
 import { Button } from './_components/Button'
 import { MapSheet } from './_components/MapSheet'
+import { NearbyRestaurantsCard } from './_components/NearbyRestaurantsCard'
+import { WeatherCard } from './_components/WeatherCard'
+import { RecentMealsCard } from './_components/RecentMealsCard'
 import { RecommendationCard } from './(home)/_components/RecommendationCard'
 import type { RecommendationResult, WeatherSnapshot } from '../../lib/types'
 import { addVisit } from '../../lib/store'
@@ -44,6 +47,20 @@ export default function HomePage(): React.ReactElement {
 
   const bootedRef = useRef(false)
   const reasonsInFlight = useRef<Set<string>>(new Set())
+
+  // Handle custom event to start recommendation flow
+  useEffect(() => {
+    const handleStartRecommendation = () => {
+      if (state.step === 'boot' && !asking && !question && !loading) {
+        dispatch({ type: 'ASK_NEXT' })
+      }
+    }
+
+    window.addEventListener('startRecommendation', handleStartRecommendation)
+    return () => {
+      window.removeEventListener('startRecommendation', handleStartRecommendation)
+    }
+  }, [state.step, asking, question, loading])
 
   useEffect(() => {
     persistSession(state)
@@ -96,6 +113,7 @@ export default function HomePage(): React.ReactElement {
     let active = true
     if (state.step !== 'qa') return
     if (asking || question) return
+    if (llmUnavailable) return
 
     setAsking(true)
     askNext(state)
@@ -125,7 +143,7 @@ export default function HomePage(): React.ReactElement {
     return () => {
       active = false
     }
-  }, [state, asking, question])
+  }, [state, asking, question, llmUnavailable])
 
   const currentRecommendation = recommendations[0] ?? null
 
@@ -218,9 +236,10 @@ export default function HomePage(): React.ReactElement {
 
   useEffect(() => {
     if (!currentRecommendation) return
+    if (llmUnavailable) return
     if (reasonsByRestaurant[currentRecommendation.restaurant.id]) return
     fetchReasons(currentRecommendation)
-  }, [currentRecommendation, fetchReasons, reasonsByRestaurant])
+  }, [currentRecommendation, fetchReasons, reasonsByRestaurant, llmUnavailable])
 
   const displayReasons: LLMReason[] = useMemo(() => {
     if (!currentRecommendation) return []
@@ -364,99 +383,138 @@ export default function HomePage(): React.ReactElement {
     setMapTarget(null)
   }, [])
 
+  const showRecommendationFlow = Boolean(question || currentRecommendation || loading || bootError || llmUnavailable || toast)
+  const hasInitialData = state.step !== 'boot' && !loading
+
   return (
     <>
       <div className="section space-y-4">
-      <Card tone="soft" className="relative flex items-center gap-3 p-4">
-        <Link
-          href="/history"
-          className="inline-flex h-11 items-center justify-center rounded-full border border-brand-sub1/60 bg-white px-5 text-sm font-semibold text-brand-sub1 shadow-sm transition-colors hover:bg-brand-bg"
-        >
-          기록 보기
-        </Link>
-        <button
-          type="button"
-          aria-label="세션 초기화"
-          onClick={handleReset}
-          className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-brand-sub1/60 bg-white text-brand shadow-sm hover:bg-brand-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sub1/60"
-        >
-          <RotateCcw className="h-8 w-8" />
-        </button>
-      </Card>
+        {!showRecommendationFlow && hasInitialData && (
+          <>
+            {/* Home Widgets Section */}
+            <div className="space-y-4">
+              <NearbyRestaurantsCard />
+              <WeatherCard />
+              <RecentMealsCard />
+            </div>
 
-      {state.weather && (
-        <Card tone="soft" className="flex flex-wrap gap-2 p-4 text-xs text-brand-sub1">
-          {weatherBadges.map((badge, idx) => (
-            <span key={idx} className="inline-flex items-center gap-1 rounded-full border border-brand-sub2/60 bg-white px-3 py-1 shadow-sm text-brand-sub1">
-              {badge.icon}
-              {badge.text}
-            </span>
-          ))}
-        </Card>
-      )}
-
-      {llmUnavailable && (
-        <Card tone="soft" className="p-4 text-sm text-brand">
-          운영자: OPENAI_API_KEY 설정이 필요합니다.
-        </Card>
-      )}
-
-      {toast && (
-        <Card tone="soft" className={`p-4 text-sm ${toastToneClass}`}>
-          {toast.message}
-        </Card>
-      )}
-
-      {bootError && (
-        <Card tone="soft" className="p-4 text-sm !border-critical/40 text-critical">
-          {bootError}
-        </Card>
-      )}
-
-      {loading && (
-        <Card tone="soft" className="flex flex-col items-center justify-center gap-3 p-6 text-brand">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand-bg border-t-brand" />
-          <span className="text-sm">초기 데이터를 불러오는 중입니다…</span>
-        </Card>
-      )}
-
-      {!loading && !currentRecommendation && !question && (
-        <Card tone="soft" className="p-8 text-center text-base text-gray-600">
-          추천 가능한 결과가 없습니다. 취향을 업데이트하거나 잠시 후 다시 시도해 주세요.
-        </Card>
-      )}
-
-      {question && (
-        <Card tone="soft" className="space-y-4 p-5">
-          <div className="text-xs font-semibold text-brand">맞춤 질문</div>
-          <div className="text-base font-semibold text-gray-900">{question.question}</div>
-          <div className="grid grid-cols-2 gap-3">
-            {question.options.map((option) => (
+            {/* Quick Actions */}
+            <Card tone="soft" className="relative flex items-center justify-center gap-3 p-4">
               <button
-                key={option}
-                onClick={() => handleAnswer(option)}
-                className="h-12 rounded-xl border border-brand-sub1/60 bg-white px-3 text-sm font-medium text-brand-sub1 shadow-sm transition-colors hover:bg-brand-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sub1"
+                type="button"
+                aria-label="세션 초기화"
+                onClick={handleReset}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-brand-sub1/60 bg-white text-brand shadow-sm hover:bg-brand-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sub1/60 min-h-[44px] min-w-[44px]"
               >
-                {option}
+                <RotateCcw className="h-8 w-8" />
               </button>
-            ))}
-          </div>
-        </Card>
-      )}
+            </Card>
+          </>
+        )}
 
-      {currentRecommendation && (
-        <RecommendationCard
-          recommendation={currentRecommendation}
-          reasons={displayReasons}
-          onDislike={handleDislike}
-          onLike={handleLike}
-          onNavigate={openMap}
-          onOpenMap={handleOpenMapSheet}
-          footer={`${Math.min(5, recommendations.length)}개 중 1번째 추천`}
-        />
-      )}
+        {/* Recommendation Flow Section */}
+        {showRecommendationFlow && (
+          <>
+            <Card tone="soft" className="relative flex items-center gap-3 p-4">
+              <Link
+                href="/history"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-brand-sub1/60 bg-white px-5 text-sm font-semibold text-brand-sub1 shadow-sm transition-colors hover:bg-brand-bg"
+              >
+                기록 보기
+              </Link>
+              <button
+                type="button"
+                aria-label="세션 초기화"
+                onClick={handleReset}
+                className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-brand-sub1/60 bg-white text-brand shadow-sm hover:bg-brand-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sub1/60"
+              >
+                <RotateCcw className="h-8 w-8" />
+              </button>
+            </Card>
+
+            {state.weather && (
+              <Card tone="soft" className="flex flex-wrap gap-2 p-4 text-xs text-brand-sub1">
+                {weatherBadges.map((badge, idx) => (
+                  <span key={idx} className="inline-flex items-center gap-1 rounded-full border border-brand-sub2/60 bg-white px-3 py-1 shadow-sm text-brand-sub1">
+                    {badge.icon}
+                    {badge.text}
+                  </span>
+                ))}
+              </Card>
+            )}
+          </>
+        )}
+
+        {(showRecommendationFlow || loading) && (
+          <>
+            {llmUnavailable && (
+              <Card tone="soft" className="p-4 text-sm text-brand">
+                운영자: OPENAI_API_KEY 설정이 필요합니다.
+              </Card>
+            )}
+
+            {toast && (
+              <Card tone="soft" className={`p-4 text-sm ${toastToneClass}`}>
+                {toast.message}
+              </Card>
+            )}
+
+            {bootError && (
+              <Card tone="soft" className="p-4 text-sm !border-critical/40 text-critical">
+                {bootError}
+              </Card>
+            )}
+
+            {loading && (
+              <Card tone="soft" className="flex flex-col items-center justify-center gap-3 p-6 text-brand">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand-bg border-t-brand" />
+                <span className="text-sm">초기 데이터를 불러오는 중입니다…</span>
+              </Card>
+            )}
+
+            {!loading && !currentRecommendation && !question && hasInitialData && (
+              <Card tone="soft" className="p-8 text-center text-base text-gray-600">
+                추천 가능한 결과가 없습니다. 취향을 업데이트하거나 잠시 후 다시 시도해 주세요.
+              </Card>
+            )}
+          </>
+        )}
+
+        {(question || currentRecommendation) && (
+          <>
+            {question && (
+              <Card tone="soft" className="space-y-4 p-5">
+                <div className="text-xs font-semibold text-brand">맞춤 질문</div>
+                <div className="text-base font-semibold text-gray-900">{question.question}</div>
+                <div className="grid grid-cols-2 gap-3">
+                  {question.options.map((option) => (
+                    <button
+                      key={option}
+                      onClick={() => handleAnswer(option)}
+                      className="h-12 rounded-xl border border-brand-sub1/60 bg-white px-3 text-sm font-medium text-brand-sub1 shadow-sm transition-colors hover:bg-brand-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sub1 min-h-[44px]"
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {currentRecommendation && (
+              <RecommendationCard
+                recommendation={currentRecommendation}
+                reasons={displayReasons}
+                onDislike={handleDislike}
+                onLike={handleLike}
+                onNavigate={openMap}
+                onOpenMap={handleOpenMapSheet}
+                footer={`${Math.min(5, recommendations.length)}개 중 1번째 추천`}
+              />
+            )}
+          </>
+        )}
       </div>
-      <MapSheet open={Boolean(mapTarget)} onClose={handleCloseMapSheet} target={mapTarget} />
+      {mapTarget && <MapSheet open={Boolean(mapTarget)} onClose={handleCloseMapSheet} target={mapTarget} />}
     </>
   )
 }

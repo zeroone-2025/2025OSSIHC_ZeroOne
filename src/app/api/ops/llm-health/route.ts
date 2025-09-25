@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
-import { hasGeminiKey } from '@/lib/env'
+import { hasOpenAIKey } from '@/lib/env'
 
 export function GET() {
-  if (hasGeminiKey()) {
+  if (hasOpenAIKey()) {
     return NextResponse.json({ status: 'KEY_PRESENT' }, { status: 200 })
   }
-  return NextResponse.json({ status: 'NO_GEMINI_KEY' }, { status: 503 })
+
+  return NextResponse.json({ status: 'NO_OPENAI_KEY' }, { status: 503 })
 }

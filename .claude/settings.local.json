@@ -9,7 +9,8 @@
       "Bash(npm run test:*)",
       "Bash(pkill:*)",
       "Bash(npm run build:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(pnpm dev:*)"
     ],
     "deny": [],
     "ask": []

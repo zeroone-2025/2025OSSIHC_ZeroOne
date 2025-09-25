@@ -15,9 +15,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "vitest run || jest --ci",
     "test": "vitest",
-    "lint": "next lint"
+    "lint": "eslint",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+
   },
   "eslintConfig": {
     "extends": [
