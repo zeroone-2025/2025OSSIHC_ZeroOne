@@ -1,5 +1,7 @@
 import { ensureOpenAI } from './env'
 
+const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions'
+
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
@@ -8,29 +10,35 @@ export interface ChatMessage {
 interface ChatOptions {
   maxTokens?: number
   temperature?: number
-  topP?: number
   signal?: AbortSignal
 }
 
 export async function chatJson(messages: ChatMessage[], options: ChatOptions = {}): Promise<any> {
   ensureOpenAI()
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      temperature: options.temperature ?? 0.2,
-      top_p: options.topP ?? 0.9,
-      max_tokens: options.maxTokens ?? 400,
-      response_format: { type: 'json_object' },
-      messages,
-    }),
-    signal: options.signal,
-  })
+  let response: Response
+  try {
+    response = await fetch(OPENAI_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        temperature: options.temperature ?? 0.2,
+        max_tokens: options.maxTokens ?? 400,
+        response_format: { type: 'json_object' },
+        messages,
+      }),
+      signal: options.signal,
+    })
+  } catch (error) {
+    const networkError = new Error('OpenAI request failed: NETWORK_ERROR')
+    networkError.name = 'OpenAIRequestError'
+    ;(networkError as Error & { cause?: unknown }).cause = error
+    throw networkError
+  }
 
   if (!response.ok) {
     const error = new Error(`OpenAI request failed: ${response.status}`)
@@ -47,7 +55,7 @@ export async function chatJson(messages: ChatMessage[], options: ChatOptions = {
 
   try {
     return JSON.parse(content)
-  } catch (error) {
+  } catch {
     throw new Error('OpenAI response is not valid JSON')
   }
 }
