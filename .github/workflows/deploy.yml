@@ -2,7 +2,7 @@ name: Deploy (whymeal)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 concurrency:
@@ -15,6 +15,7 @@ jobs:
     env:
       APP_DIR: /var/www/whymeal/2025OSSIHC_ZeroOne
       PM2_NAME: whymeal
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,36 +30,22 @@ jobs:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}        # 예: 113.198.66.75
-          port: ${{ secrets.SSH_PORT }}        # 예: 19190
-          username: ${{ secrets.SSH_USERNAME }}# 예: ubuntu
-          key: ${{ secrets.SSH_PRIVATE_KEY }}  # PEM 본문(base64 아님)
-          timeout: 60s
-          command_timeout: 30m
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-
-            echo "[1/6] CD"
             cd "$APP_DIR"
-
-            echo "[2/6] Git reset to origin/main"
             git fetch --all
             git reset --hard origin/main
-
-            echo "[3/6] Install deps"
             if [ -f package-lock.json ]; then
               npm ci --omit=dev
             else
               npm install --production
             fi
-
-            echo "[4/6] Build"
             NODE_ENV=production npm run build
-
-            echo "[5/6] PM2 restart"
             pm2 restart "$PM2_NAME" || pm2 start npm --name "$PM2_NAME" -- start
             pm2 save
-
-            echo "[6/6] Status"
             pm2 ls
             ss -ltnp | grep -E ':3000|:8080' || true
