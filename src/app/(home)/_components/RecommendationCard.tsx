@@ -44,7 +44,7 @@ export function RecommendationCard({
         </div>
         <div className="flex flex-col items-end gap-2">
           <span className="rounded-full border border-brand-sub1/60 bg-brand-sub1/20 px-3 py-1 text-xs font-semibold text-brand-sub1">
-            ETA {etaMins ?? restaurant.etaMins ?? 0}분
+            ETA {etaMins ?? restaurant.etaMins ?? 0}분 · {restaurant.distanceM ? `${Math.round(restaurant.distanceM)}m` : '거리 미정'} · {restaurant.category}
           </span>
         </div>
       </div>
@@ -74,7 +74,7 @@ export function RecommendationCard({
         <div className="rounded-xl border border-brand-sub1/60 bg-white p-3 shadow-sm">
           <span className="text-xs text-brand-sub1/70">거리</span>
           <div className="text-sm font-medium text-gray-900">
-            {restaurant.etaMins ? `${restaurant.etaMins * 80}m ±` : '예상 거리 미정'}
+            {restaurant.distanceM ? `${Math.round(restaurant.distanceM)}m` : '예상 거리 미정'}
           </div>
         </div>
       </div>

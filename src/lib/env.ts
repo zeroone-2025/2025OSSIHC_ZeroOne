@@ -28,3 +28,11 @@ export function hasWeatherKey(): boolean {
 export function hasKakaoKey(): boolean {
   return Boolean(readEnv('KAKAO_API_KEY') ?? readEnv('NEXT_PUBLIC_KAKAO_JS_KEY'))
 }
+
+export function ensureKakao(): string {
+  const key = readEnv('KAKAO_REST_API_KEY');
+  if (!key) {
+    throw new Error('NO_KAKAO_KEY');
+  }
+  return key;
+}
