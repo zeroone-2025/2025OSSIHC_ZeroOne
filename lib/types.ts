@@ -4,7 +4,7 @@ export interface Restaurant {
   lat: number;
   lng: number;
   category: 'korean' | 'japanese' | 'chinese' | 'vietnamese' | 'indian';
-  price_tier: 1 | 2 | 3;
+  price_tier: 1 | 2 | 3 | 4 | 5;
   tags: string[];
   allergens: string[];
   macros: {
@@ -15,6 +15,7 @@ export interface Restaurant {
   };
   season: ('spring' | 'summer' | 'autumn' | 'winter')[];
   etaMins?: number;
+  distanceM?: number;
   category_name?: string;
   categoryLevels?: string[];
   categoryStrength?: 'leaf' | 'mid' | 'none';

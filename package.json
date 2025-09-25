@@ -1,6 +1,6 @@
 {
-  "name": "flow-app",
-  "version": "0.1.0",
+  "name": "whtmeal-app",
+  "version": "0.5.4",
   "private": true,
   "dependencies": {
     "@testing-library/dom": "^10.4.1",

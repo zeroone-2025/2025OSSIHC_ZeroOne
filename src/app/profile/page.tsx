@@ -76,7 +76,15 @@ export default function ProfilePage(): React.ReactElement {
     <div className="section space-y-4">
       <Card tone="soft" className="space-y-2 p-5">
         <h1 className="text-2xl font-bold text-gray-900">개인 프로필</h1>
-        <p className="text-sm text-brand-sub1/80">식사 모드와 인원수는 LLM 질문에서 자동 수집합니다.</p>
+        <p className="text-sm text-brand-sub1/80">예산, 시간, 식사 스타일은 추천 세션에서 질문합니다.</p>
+        <div className="mt-3 rounded-lg bg-blue-50 border border-blue-200 p-3">
+          <p className="text-xs font-medium text-blue-800">
+            🛡️ 알레르기·금지식재료는 여기서만 관리됩니다
+          </p>
+          <p className="text-xs text-blue-600 mt-1">
+            추천 과정에서 알레르기 관련 질문이 나오지 않으니, 미리 여기서 설정해 주세요.
+          </p>
+        </div>
       </Card>
 
       <Card tone="lifted" className="p-6">
@@ -101,9 +109,12 @@ export default function ProfilePage(): React.ReactElement {
         </div>
       </Card>
 
-      <Card tone="soft" className="p-6">
-        <h2 className="text-lg font-semibold text-gray-900">알레르기</h2>
-        <p className="text-sm text-brand-sub1/80">선택한 알레르기 재료는 추천에서 제외합니다.</p>
+      <Card tone="soft" className="p-6 border-2 border-red-100">
+        <div className="flex items-center gap-2 mb-2">
+          <h2 className="text-lg font-semibold text-gray-900">🚨 알레르기</h2>
+          <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">필수 설정</span>
+        </div>
+        <p className="text-sm text-brand-sub1/80">선택한 알레르기 재료는 추천에서 완전히 제외됩니다.</p>
         <div className="mt-3 grid grid-cols-2 gap-3">
           {allergyOptions.map((option) => {
             const active = prefs.allergies.includes(option.value)

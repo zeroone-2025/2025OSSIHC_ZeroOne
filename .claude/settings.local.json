@@ -12,7 +12,9 @@
       "Bash(npm run dev:*)",
       "Bash(pnpm dev:*)",
       "Bash(mkdir:*)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run lint)"
     ],
     "deny": [],
     "ask": []

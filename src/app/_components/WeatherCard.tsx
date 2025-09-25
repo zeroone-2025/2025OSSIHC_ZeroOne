@@ -85,10 +85,44 @@ const formatPrecipitation = (data: WeatherSnapshot): string => {
   return ''
 }
 
+  const formatFeelsLike = (data: WeatherSnapshot): string => {
+    const temp = data.T1H ?? data.TMP ?? 15;
+    const humidity = data.REH ?? 50;
+    const windSpeed = data.WSD ?? 1.5;
+
+    // Simple heat index calculation
+    const feelsLike = temp + (humidity - 50) * 0.1 - windSpeed * 0.5;
+    return `${Math.round(feelsLike * 10) / 10}°C`;
+  };
+
+  const formatHumidity = (humidity: number | undefined): string => {
+    return humidity ? `${Math.round(humidity)}%` : '50%';
+  };
+
+  const formatRainfall = (data: WeatherSnapshot): string => {
+    const toNum = (v: unknown): number => {
+      if (typeof v === 'number') return v;
+      if (typeof v === 'string') {
+        const n = Number(v);
+        return Number.isNaN(n) ? 0 : n;
+      }
+      return 0;
+    };
+
+    const rn1 = toNum(data.RN1);
+    const pcp = toNum(data.PCP);
+    const rain = Math.max(rn1, pcp);
+
+    if (rain > 0) {
+      return `${rain.toFixed(1)}mm/h`;
+    }
+    return '0mm/h';
+  };
+
   const getWeatherBadges = (data: WeatherSnapshot) => {
     const badges: Array<{ icon: React.ReactElement; text: string; color: string }> = []
 
-    // Temperature
+    // Temperature (actual)
     const temp = data.T1H ?? data.TMP ?? 15
     badges.push({
       icon: <Thermometer size={14} />,
@@ -96,20 +130,31 @@ const formatPrecipitation = (data: WeatherSnapshot): string => {
       color: 'text-brand'
     })
 
-    // Precipitation
-    const precipText = formatPrecipitation(data)
-    if (precipText) {
-      badges.push({
-        icon: <Cloud size={14} />,
-        text: precipText,
-        color: 'text-blue-600'
-      })
-    }
+    // Rainfall (numerical)
+    badges.push({
+      icon: <Cloud size={14} />,
+      text: formatRainfall(data),
+      color: 'text-blue-600'
+    })
 
-    // Wind
+    // Feels like temperature
+    badges.push({
+      icon: <Thermometer size={14} />,
+      text: `체감 ${formatFeelsLike(data)}`,
+      color: 'text-orange-600'
+    })
+
+    // Humidity
     badges.push({
       icon: <Wind size={14} />,
-      text: formatWindSpeed(data.WSD ?? 1.5),
+      text: `습도 ${formatHumidity(data.REH)}`,
+      color: 'text-cyan-600'
+    })
+
+    // Wind Speed
+    badges.push({
+      icon: <Wind size={14} />,
+      text: `풍속 ${formatWindSpeed(data.WSD ?? 1.5)}`,
       color: 'text-gray-600'
     })
 
@@ -178,32 +223,6 @@ const formatPrecipitation = (data: WeatherSnapshot): string => {
         ))}
       </div>
 
-      {weather.data?.flags && Object.values(weather.data.flags).some(Boolean) && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <div className="flex flex-wrap gap-1">
-            {weather.data.flags.hot && (
-              <span className="px-2 py-1 text-xs bg-red-50 text-red-600 rounded-full border border-red-200">
-                더움
-              </span>
-            )}
-            {weather.data.flags.cold && (
-              <span className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded-full border border-blue-200">
-                추움
-              </span>
-            )}
-            {weather.data.flags.wet && (
-              <span className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded-full border border-blue-200">
-                습함
-              </span>
-            )}
-            {weather.data.flags.windy && (
-              <span className="px-2 py-1 text-xs bg-gray-50 text-gray-600 rounded-full border border-gray-200">
-                바람
-              </span>
-            )}
-          </div>
-        </div>
-      )}
     </Card>
   )
 }

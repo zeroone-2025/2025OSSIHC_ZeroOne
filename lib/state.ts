@@ -1,5 +1,6 @@
 import { setStoredSession, getStoredSession, clearStoredSession } from './store'
 import { WeatherSnapshot, Restaurant } from './types'
+import type { TimePressure } from '../src/lib/mapping'
 
 export type Step = 'boot' | 'qa' | 'recommend' | 'wait_review' | 'done'
 
@@ -28,6 +29,10 @@ export interface SessionState {
   freeTimeMins?: number
   pendingReview?: PendingReview
   error?: string
+  // New session parameters
+  maxPrice?: number
+  timePressure?: TimePressure
+  mealFeel?: string[]
 }
 
 export type Event =
@@ -36,6 +41,9 @@ export type Event =
   | { type: 'ASK_NEXT' }
   | { type: 'ANSWER_COMMIT'; answer: Omit<Answer, 'collectedAt'> }
   | { type: 'SET_FREE_TIME'; minutes?: number }
+  | { type: 'SET_BUDGET'; maxPrice: number }
+  | { type: 'SET_TIME_PRESSURE'; timePressure: TimePressure }
+  | { type: 'SET_MEAL_FEEL'; mealFeel: string[] }
   | { type: 'QNA_DONE' }
   | { type: 'RECOMMEND_READY'; pool: Restaurant[] }
   | { type: 'DECIDE'; placeId: string }
@@ -45,7 +53,7 @@ export type Event =
   | { type: 'ERROR'; message: string }
   | { type: 'RESET' }
 
-const SESSION_VERSION = 2
+const SESSION_VERSION = 3
 
 function createSessionId(): string {
   return `sess-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
@@ -76,6 +84,9 @@ export function reducer(state: SessionState, event: Event): SessionState {
         places: [],
         weather: undefined,
         freeTimeMins: undefined,
+        maxPrice: undefined,
+        timePressure: undefined,
+        mealFeel: undefined,
         error: undefined,
       }
     case 'POOL_SEEDED':
@@ -100,6 +111,12 @@ export function reducer(state: SessionState, event: Event): SessionState {
       return { ...state, step: 'recommend', pool: event.pool }
     case 'SET_FREE_TIME':
       return { ...state, freeTimeMins: typeof event.minutes === 'number' ? event.minutes : undefined }
+    case 'SET_BUDGET':
+      return { ...state, maxPrice: event.maxPrice }
+    case 'SET_TIME_PRESSURE':
+      return { ...state, timePressure: event.timePressure }
+    case 'SET_MEAL_FEEL':
+      return { ...state, mealFeel: event.mealFeel }
     case 'DECIDE':
       return {
         ...state,
