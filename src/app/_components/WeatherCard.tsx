@@ -58,18 +58,32 @@ export function WeatherCard(): React.ReactElement {
     return speed ? `${Math.round(speed)}m/s` : '1m/s'
   }
 
-  const formatPrecipitation = (data: WeatherSnapshot): string => {
-    if (data.RN1 && data.RN1 > 0) {
-      return `${data.RN1}mm`
+const formatPrecipitation = (data: WeatherSnapshot): string => {
+  const toNum = (v: unknown): number => {
+    if (typeof v === 'number') return v
+    if (typeof v === 'string') {
+      const n = Number(v)
+      return Number.isNaN(n) ? 0 : n
     }
-    if (data.PCP && parseFloat(data.PCP) > 0) {
-      return `${data.PCP}mm`
-    }
-    if (data.flags?.wet) {
-      return '강수'
-    }
-    return ''
+    return 0
   }
+
+  const rn1 = toNum(data.RN1)
+  if (rn1 > 0) {
+    return `${rn1}mm`
+  }
+
+  const pcp = toNum(data.PCP)
+  if (pcp > 0) {
+    return `${pcp}mm`
+  }
+
+  if (data.flags?.wet) {
+    return '강수'
+  }
+
+  return ''
+}
 
   const getWeatherBadges = (data: WeatherSnapshot) => {
     const badges: Array<{ icon: React.ReactElement; text: string; color: string }> = []
