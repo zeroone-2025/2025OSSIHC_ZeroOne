@@ -1,8 +1,6 @@
-name: Deploy to Whymeal Server
-
+name: Deploy
 on:
-  push:
-    branches: [ main ]
+  push: { branches: [main] }
   workflow_dispatch:
 
 jobs:
@@ -11,30 +9,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate secrets
-        run: |
-          test -n "${{ secrets.SSH_HOST }}" || (echo "SSH_HOST missing" && exit 1)
-          test -n "${{ secrets.SSH_PORT }}" || (echo "SSH_PORT missing" && exit 1)
-          test -n "${{ secrets.SSH_USER }}" || (echo "SSH_USER missing" && exit 1)
-          test -n "${{ secrets.SSH_PRIVATE_KEY }}" || (echo "SSH_PRIVATE_KEY missing" && exit 1)
-
-      - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - uses: webfactory/ssh-agent@v0.9.0
         with:
-          host: ${{ secrets.SSH_HOST }}      # 113.198.66.75
-          username: ${{ secrets.SSH_USER }}  # ubuntu
-          port: ${{ secrets.SSH_PORT }}      # 19190
-          key: ${{ secrets.SSH_PRIVATE_KEY }}  # 멀티라인 PEM 원문 그대로
-          timeout: 120s
-          command_timeout: 20m
-          script: |
-            set -e
-            cd /var/www/whymeal/2025OSSIHC_ZeroOne
-            git fetch --all
-            git reset --hard origin/main
-            if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --production; fi
-            NODE_ENV=production npm run build
-            pm2 restart whymeal || pm2 start npm --name "whymeal" -- start
-            pm2 save
-            pm2 ls
-            ss -ltnp | grep -E ':3000|:8080' || true
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy script over SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} <<'EOF'
+          set -e
+          cd /var/www/whymeal/2025OSSIHC_ZeroOne
+          git fetch --all
+          git reset --hard origin/main
+          if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --production; fi
+          NODE_ENV=production npm run build
+          pm2 restart whymeal || pm2 start npm --name "whymeal" -- start
+          pm2 save
+          pm2 ls
+          ss -ltnp | grep -E ':3000|:8080' || true
+          EOF
