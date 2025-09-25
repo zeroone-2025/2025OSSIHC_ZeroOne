@@ -2,37 +2,29 @@ name: Deploy to Whymeal Server
 
 on:
   push:
-    branches: [ main ]     # 메인 푸시 시 자동 배포
-  workflow_dispatch:        # 수동 실행 허용
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # (선택) 시크릿 누락 즉시 실패
       - name: Validate secrets
         run: |
           test -n "${{ secrets.SSH_HOST }}" || (echo "SSH_HOST missing" && exit 1)
           test -n "${{ secrets.SSH_PORT }}" || (echo "SSH_PORT missing" && exit 1)
           test -n "${{ secrets.SSH_USER }}" || (echo "SSH_USER missing" && exit 1)
-          test -n "${{ secrets.SSH_PRIVATE_KEY_B64 }}" || (echo "SSH_PRIVATE_KEY_B64 missing" && exit 1)
-
-      - name: Prepare SSH key (from base64)
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY_B64 }}" | base64 -d > key.pem
-          chmod 600 key.pem
+          test -n "${{ secrets.SSH_PRIVATE_KEY }}" || (echo "SSH_PRIVATE_KEY missing" && exit 1)
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}       # 예: 113.198.66.75
-          username: ${{ secrets.SSH_USER }}   # 예: ubuntu
-          port: ${{ secrets.SSH_PORT }}       # 예: 19190  (JCloud 포트포워딩)
-          key_path: key.pem
+          host: ${{ secrets.SSH_HOST }}      # 113.198.66.75
+          username: ${{ secrets.SSH_USER }}  # ubuntu
+          port: ${{ secrets.SSH_PORT }}      # 19190
+          key: ${{ secrets.SSH_PRIVATE_KEY }}  # 멀티라인 PEM 원문 그대로
           timeout: 120s
           command_timeout: 20m
           script: |
@@ -40,18 +32,9 @@ jobs:
             cd /var/www/whymeal/2025OSSIHC_ZeroOne
             git fetch --all
             git reset --hard origin/main
-
-            if [ -f package-lock.json ]; then
-              npm ci --omit=dev
-            else
-              npm install --production
-            fi
-
+            if [ -f package-lock.json ]; then npm ci --omit=dev; else npm install --production; fi
             NODE_ENV=production npm run build
-
             pm2 restart whymeal || pm2 start npm --name "whymeal" -- start
             pm2 save
-
-            # 상태 출력
             pm2 ls
             ss -ltnp | grep -E ':3000|:8080' || true
