@@ -1,42 +1,38 @@
-name: Deploy (whymeal)
-
+name: Deploy
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch:
+  workflow_dispatch: {}
 
-concurrency:
-  group: deploy-main
-  cancel-in-progress: true
+env:
+  APP_DIR: /var/www/whymeal/2025OSSIHC_ZeroOne
+  PM2_NAME: whymeal
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      APP_DIR: /var/www/whymeal/2025OSSIHC_ZeroOne
-      PM2_NAME: whymeal
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Validate required secrets
+      - name: Sanity check secrets
         run: |
           test -n "${{ secrets.SSH_HOST }}" || (echo "SSH_HOST missing" && exit 1)
           test -n "${{ secrets.SSH_PORT }}" || (echo "SSH_PORT missing" && exit 1)
           test -n "${{ secrets.SSH_USERNAME }}" || (echo "SSH_USERNAME missing" && exit 1)
           test -n "${{ secrets.SSH_PRIVATE_KEY }}" || (echo "SSH_PRIVATE_KEY missing" && exit 1)
 
-      - name: Deploy over SSH
+      - name: Remote deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          timeout: 30s
+          command_timeout: 10m
           script: |
             set -e
-            cd "$APP_DIR"
+            cd /var/www/whymeal/2025OSSIHC_ZeroOne
             git fetch --all
             git reset --hard origin/main
             if [ -f package-lock.json ]; then
@@ -45,7 +41,7 @@ jobs:
               npm install --production
             fi
             NODE_ENV=production npm run build
-            pm2 restart "$PM2_NAME" || pm2 start npm --name "$PM2_NAME" -- start
+            pm2 restart whymeal || pm2 start npm --name "whymeal" -- start
             pm2 save
             pm2 ls
             ss -ltnp | grep -E ':3000|:8080' || true
