@@ -35,23 +35,23 @@ jobs:
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             
-            cd /var/www/whymeal/2025OSSIHC_ZeroOne
+            cd $APP_DIR
             git fetch --all
             git reset --hard origin/main
-            
+
+            # 🔧 package.json에 build/start 없으면 자동 추가
+            node -e "let p=require('./package.json');p.scripts=p.scripts||{};if(!p.scripts.build)p.scripts.build='next build';if(!p.scripts.start)p.scripts.start='next start -p 8080';require('fs').writeFileSync('package.json',JSON.stringify(p,null,2))"
+
             rm -rf .next 
 
             if [ -f package-lock.json ]; then
-              # --- FIX: Removed --omit=dev to install build-time dependencies ---
               npm ci
             else
-              # --- FIX: Removed --production flag ---
               npm install
             fi
             
             NODE_ENV=production npm run build
-            pm2 restart whymeal || pm2 start npm --name "whymeal" -- start
+            pm2 restart $PM2_NAME || pm2 start npm --name "$PM2_NAME" -- start
             pm2 save
             pm2 ls
             ss -ltnp | grep -E ':3000|:8080' || true
-
