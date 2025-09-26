@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const allowedRoutes = ['/', '/profile', '/history', '/map']
+const allowedRoutes = ['/']
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl

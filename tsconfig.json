@@ -11,10 +11,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
+    "baseUrl": "src",
     "paths": {
-  "@/*": ["src/*", "lib/*"]
-},
+      "@/*": [
+        "*"
+      ]
+    },
     "types": [
       "react",
       "react-dom"

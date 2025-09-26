@@ -19,9 +19,7 @@
     "start": "next start -p 8080",
     "test": "vitest",
     "lint": "eslint",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "check:vocab": "node scripts/verifyVocab.mjs",
-    "test:vocab": "vitest run src/test/vocab.test.ts"
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "eslintConfig": {
     "extends": [

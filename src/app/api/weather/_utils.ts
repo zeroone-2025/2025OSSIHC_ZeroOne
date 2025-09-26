@@ -1,4 +1,4 @@
-const WEATHER_AUTH_KEY = process.env.WEATHER_AUTH_KEY;
+const KMA_API_KEY = process.env.KMA_API_KEY;
 const BASE_URL = 'http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
 
 export interface GridCoord {
@@ -91,12 +91,12 @@ export function roundToShortTime(date: Date): { baseDate: string; baseTime: stri
 }
 
 export function createWeatherUrl(endpoint: string, baseDate: string, baseTime: string, nx: number, ny: number, numOfRows: number = 10): string {
-  if (!WEATHER_AUTH_KEY) {
+  if (!KMA_API_KEY) {
     throw new Error('Weather API key not configured');
   }
 
   const url = new URL(`${BASE_URL}/${endpoint}`);
-  url.searchParams.set('serviceKey', WEATHER_AUTH_KEY);
+  url.searchParams.set('serviceKey', KMA_API_KEY);
   url.searchParams.set('pageNo', '1');
   url.searchParams.set('numOfRows', numOfRows.toString());
   url.searchParams.set('dataType', 'JSON');

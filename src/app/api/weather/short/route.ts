@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { coordToGrid, roundToShortTime, createWeatherUrl, createCacheHeaders } from '../_utils';
 
-const WEATHER_AUTH_KEY = process.env.WEATHER_AUTH_KEY;
+const KMA_API_KEY = process.env.KMA_API_KEY;
 
 export async function GET(request: NextRequest) {
-  if (!WEATHER_AUTH_KEY) {
+  if (!KMA_API_KEY) {
     return NextResponse.json({ error: 'NO_WEATHER_KEY' }, { status: 503 });
   }
 
