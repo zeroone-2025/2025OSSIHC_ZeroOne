@@ -19,7 +19,9 @@
       "Bash(./cleanup_data.sh:*)",
       "Bash(npx vitest run:*)",
       "Bash(cp:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npm run check:vocab:*)",
+      "Bash(npm run test:vocab:*)"
     ],
     "deny": [],
     "ask": []

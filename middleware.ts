@@ -6,7 +6,7 @@ const allowedRoutes = ['/', '/profile', '/history', '/map']
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (pathname.startsWith('/api') || pathname.startsWith('/_next') || pathname.startsWith('/public')) {
+  if (pathname.startsWith('/api') || pathname.startsWith('/_next') || pathname.startsWith('/public') || pathname.startsWith('/data')) {
     return NextResponse.next()
   }
 
