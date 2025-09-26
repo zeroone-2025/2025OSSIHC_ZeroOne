@@ -21,7 +21,8 @@
       "Bash(cp:*)",
       "Bash(node:*)",
       "Bash(npm run check:vocab:*)",
-      "Bash(npm run test:vocab:*)"
+      "Bash(npm run test:vocab:*)",
+      "Bash(tsc --noEmit)"
     ],
     "deny": [],
     "ask": []

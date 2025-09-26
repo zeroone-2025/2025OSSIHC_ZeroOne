@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, vi } from 'vitest'
 import { loadAllergies, loadFoodDislikes, loadAllVocab, findSynonymMatches, getAllSynonyms, getVocabStats, type VocabData } from '../lib/vocab'
 
 // Mock fetch for testing
