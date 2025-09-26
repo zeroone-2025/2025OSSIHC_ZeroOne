@@ -1,217 +1,150 @@
+// src/app/api/weather/live/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  coordToGrid,
-  roundToLiveTime,
-  roundToShortTime,
-  createWeatherUrl,
-  createCacheHeaders,
-} from '../_utils';
 
-const KMA_API_KEY = process.env.KMA_API_KEY;
-
-type LiveItem = {
-  category: string;
-  obsrValue: string;
+type Wx = {
+  T1H?: number;   // 기온 ℃
+  RN1?: number;   // 1시간 강수량 mm (문자일 수 있어 파싱 필요)
+  PTY?: number;   // 강수형태 (0없음 1비 2비/눈 3눈 4소나기 5빗방울 6빗눈 7눈날림)
+  SKY?: number;   // 하늘상태 (1맑음 3구름많음 4흐림)
+  REH?: number;   // 습도 %
+  WSD?: number;   // 풍속 m/s
+  SNO?: number;   // (초단실황엔 보통 없음) 눈 적설 cm, 없으면 undefined
 };
 
-type ShortItem = {
-  category: string;
-  fcstDate: string;
-  fcstTime: string;
-  fcstValue: string;
+type Weights = {
+  W_cold: number; W_hot: number; W_gloom: number;
+  W_rain: number; W_snow: number; W_humid: number; W_wind: number;
 };
 
-const FLAG_ORDER: Array<'cold' | 'hot' | 'rain' | 'humid' | 'dry' | 'windy'> = [
-  'cold',
-  'hot',
-  'rain',
-  'humid',
-  'dry',
-  'windy',
-];
+const KMA_HOST = 'http://apis.data.go.kr/1360000';
+const SERVICE = 'VilageFcstInfoService_2.0/getUltraSrtNcst';
 
-function toNumber(input: unknown): number | undefined {
-  if (typeof input === 'number') {
-    return Number.isFinite(input) ? input : undefined;
+function toGrid(lat:number, lon:number){
+  // KMA LCC DFS
+  const RE=6371.00877, GRID=5.0, SLAT1=30.0, SLAT2=60.0, OLON=126.0, OLAT=38.0, XO=43, YO=136;
+  const DEGRAD=Math.PI/180.0;
+  const re=RE/GRID, sl1=SLAT1*DEGRAD, sl2=SLAT2*DEGRAD, olon=OLON*DEGRAD, olat=OLAT*DEGRAD;
+  let sn=Math.tan(Math.PI*0.25 + sl2*0.5)/Math.tan(Math.PI*0.25 + sl1*0.5);
+  sn=Math.log(Math.cos(sl1)/Math.cos(sl2))/Math.log(sn);
+  let sf=Math.tan(Math.PI*0.25 + sl1*0.5); sf=Math.pow(sf,sn)*Math.cos(sl1)/sn;
+  let ro=Math.tan(Math.PI*0.25 + olat*0.5); ro=re*sf/Math.pow(ro,sn);
+  const ra=Math.tan(Math.PI*0.25 + (lat*DEGRAD)*0.5); const r=re*sf/Math.pow(ra,sn);
+  let theta=lon*DEGRAD-olon; if(theta>Math.PI) theta-=2*Math.PI; if(theta<-Math.PI) theta+=2*Math.PI; theta*=sn;
+  const nx=Math.floor(r*Math.sin(theta)+XO+0.5); const ny=Math.floor(ro-r*Math.cos(theta)+YO+0.5);
+  return { nx, ny };
+}
+
+// 초단기실황은 정시+10분경 업데이트 → 40분 전 기준으로 맞춤
+function kstBase(){
+  const now = new Date();
+  // Use server local time; subtract 40 minutes for safety
+  const base = new Date(now.getTime() - 40*60*1000);
+  const y = base.getFullYear();
+  const m = String(base.getMonth()+1).padStart(2,'0');
+  const d = String(base.getDate()).padStart(2,'0');
+  const H = String(base.getHours()).padStart(2,'0');
+  return { base_date:`${y}${m}${d}`, base_time:`${H}00` };
+}
+
+function parseRN1(v: any): number|undefined {
+  // "강수없음" | "1.0mm" | "50.0mm 이상" → 숫자
+  if (v==null) return undefined;
+  const s=String(v).trim();
+  if (s.includes('강수없음')) return 0;
+  const n=parseFloat(s.replace(/[^0-9.]/g,''));
+  return isNaN(n) ? undefined : n;
+}
+
+function weights(wx: Wx): Weights {
+  const T = wx.T1H ?? 20;
+  const RN1 = wx.RN1 ?? 0;
+  const PTY = wx.PTY ?? 0;
+  const SKY = wx.SKY ?? 1;
+  const REH = wx.REH ?? 50;
+  const WSD = wx.WSD ?? 2;
+  const SNO = wx.SNO;
+
+  // 1.1 Temperature
+  let W_cold = 0, W_hot = 0;
+  if (T <= 10) W_cold = 1.0;
+  else if (T < 22) W_cold = (22 - T) / 12;
+  else W_cold = 0.0;
+  if (T >= 28) W_hot = 1.0;
+  else if (T >= 22) W_hot = (T - 22) / 6;
+
+  // 1.2 Sky
+  const W_gloom = SKY === 4 ? 1.0 : SKY === 3 ? 0.5 : 0.0;
+
+  // 1.3 Precip
+  let W_rain = 0, W_snow = 0;
+  const rn = RN1;
+  const rainish = [1,4,5].includes(PTY);
+  const snowish = [3,6,7].includes(PTY);
+  if (PTY === 2) {
+    if (T > 1) {
+      if (rn > 5) W_rain = 1.0; else if (rn >= 1) W_rain = 0.8; else W_rain = 0.4;
+    } else {
+      const sno = SNO ?? rn/2;
+      if (sno > 2.0) W_snow = 1.0; else if (sno >= 0.5) W_snow = 0.7; else W_snow = 0.3;
+    }
+  } else if (rainish) {
+    if (rn > 5) W_rain = 1.0; else if (rn >= 1) W_rain = 0.8; else W_rain = 0.4;
+  } else if (snowish) {
+    const sno = SNO ?? rn/2;
+    if (sno > 2.0) W_snow = 1.0; else if (sno >= 0.5) W_snow = 0.7; else W_snow = 0.3;
   }
-  if (typeof input !== 'string') return undefined;
-  if (input.trim() === '' || input === '강수없음') return 0;
-  const match = input.match(/-?\d+(?:\.\d+)?/);
-  if (!match) return undefined;
-  const parsed = Number(match[0]);
-  return Number.isFinite(parsed) ? parsed : undefined;
+
+  // 1.4 Humidity
+  let W_humid = 0;
+  if (REH > 90) W_humid = 1.0;
+  else if (REH >= 60) W_humid = (REH - 60) / 30;
+
+  // 1.5 Wind
+  let W_wind = 0;
+  if (WSD > 14) W_wind = 1.0;
+  else if (WSD >= 9) W_wind = 0.7;
+  else if (WSD >= 4) W_wind = 0.3;
+
+  return { W_cold, W_hot, W_gloom, W_rain, W_snow, W_humid, W_wind };
 }
 
-function pickLiveValue(items: LiveItem[], category: string, fallback: number): number {
-  const value = items.find((item) => item.category === category)?.obsrValue;
-  return toNumber(value) ?? fallback;
-}
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const lat = Number(searchParams.get('lat'));
+    const lng = Number(searchParams.get('lng'));
+    if (!isFinite(lat) || !isFinite(lng)) {
+      return NextResponse.json({ error:'INVALID_COORDS' }, { status:400 });
+    }
 
-function buildShortMetrics(items: ShortItem[] | undefined, now: Date) {
-  if (!items?.length) return {} as Record<string, number | undefined>;
+    const key = process.env.KMA_API_KEY; // URL-encoded 일반키
+    const { nx, ny } = toGrid(lat, lng);
+    const { base_date, base_time } = kstBase();
 
-  const nowKey = Number(
-    `${now.toISOString().slice(0, 10).replace(/-/g, '')}${now
-      .toISOString()
-      .slice(11, 16)
-      .replace(':', '')}`,
-  );
-
-  const firstByCategory = (category: string) => {
-    let candidateKey = Number.POSITIVE_INFINITY;
-    let candidateValue: number | undefined;
-
-    for (const item of items) {
-      if (item.category !== category) continue;
-      const key = Number(`${item.fcstDate}${item.fcstTime}`);
-      if (!Number.isFinite(key)) continue;
-      if (key < nowKey) continue;
-      if (key < candidateKey) {
-        candidateKey = key;
-        candidateValue = toNumber(item.fcstValue);
+    let wx: Wx = {};
+    if (key) {
+      const url = `${KMA_HOST}/${SERVICE}?serviceKey=${key}&numOfRows=50&pageNo=1&dataType=JSON&base_date=${base_date}&base_time=${base_time}&nx=${nx}&ny=${ny}`;
+      const r = await fetch(url, { cache:'no-store' });
+      if (r.ok) {
+        const j = await r.json().catch(()=>null);
+        const items = j?.response?.body?.items?.item ?? [];
+        for (const it of items) {
+          const c = it.category, v = it.obsrValue;
+          if (c==='T1H') wx.T1H = Number(v);
+          else if (c==='RN1') wx.RN1 = parseRN1(v);
+          else if (c==='PTY') wx.PTY = Number(v);
+          else if (c==='SKY') wx.SKY = Number(v);
+          else if (c==='REH') wx.REH = Number(v);
+          else if (c==='WSD') wx.WSD = Number(v);
+          else if (c==='SNO') wx.SNO = Number(v);
+        }
       }
     }
 
-    if (candidateValue === undefined) {
-      const fallbackItem = items.find((item) => item.category === category);
-      return toNumber(fallbackItem?.fcstValue);
-    }
-
-    return candidateValue;
-  };
-
-  return {
-    TMP: firstByCategory('TMP'),
-    REH: firstByCategory('REH'),
-    WSD: firstByCategory('WSD'),
-    PTY: firstByCategory('PTY'),
-    POP: firstByCategory('POP'),
-    TMX: firstByCategory('TMX'),
-    TMN: firstByCategory('TMN'),
-  } as Record<string, number | undefined>;
-}
-
-function deriveFlags(params: {
-  tempNow: number;
-  humidityNow: number;
-  windNow: number;
-  precipNow: boolean;
-  shortMetrics: Record<string, number | undefined>;
-}): string[] {
-  const flags = new Set<string>();
-
-  const {
-    tempNow,
-    humidityNow,
-    windNow,
-    precipNow,
-    shortMetrics: { TMP, REH, WSD, PTY, POP, TMX, TMN },
-  } = params;
-
-  const effectiveHot = TMX ?? TMP ?? tempNow;
-  const effectiveCold = TMN ?? TMP ?? tempNow;
-  const effectiveHumidity = REH ?? humidityNow;
-  const effectiveWind = WSD ?? windNow;
-  const precipSoon = (PTY ?? 0) > 0 || (POP ?? 0) >= 60;
-
-  if (effectiveCold <= 10 || tempNow <= 10) flags.add('cold');
-  if (effectiveHot >= 28 || tempNow >= 28) flags.add('hot');
-  if (precipNow || precipSoon) flags.add('rain');
-  if (effectiveHumidity >= 80) flags.add('humid');
-  if (effectiveHumidity > 0 && effectiveHumidity <= 40) flags.add('dry');
-  if (effectiveWind >= 8 || windNow >= 8) flags.add('windy');
-
-  return FLAG_ORDER.filter((flag) => flags.has(flag));
-}
-
-async function fetchShortItems(nx: number, ny: number, now: Date): Promise<ShortItem[] | undefined> {
-  try {
-    const { baseDate, baseTime } = roundToShortTime(now);
-    const url = createWeatherUrl('getVilageFcst', baseDate, baseTime, nx, ny, 200);
-    const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) return undefined;
-    const data = await response.json();
-    const raw = data?.response?.body?.items?.item;
-    if (!raw) return undefined;
-    return Array.isArray(raw) ? raw : [raw];
-  } catch (error) {
-    console.warn('Failed to load short-term forecast', error);
-    return undefined;
-  }
-}
-
-export async function GET(request: NextRequest) {
-  if (!KMA_API_KEY) {
-    return NextResponse.json({ error: 'NO_WEATHER_KEY' }, { status: 503 });
-  }
-
-  const searchParams = request.nextUrl.searchParams;
-  const lat = Number(searchParams.get('lat'));
-  const lng = Number(searchParams.get('lng'));
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return NextResponse.json({ error: 'INVALID_COORDS' }, { status: 400 });
-  }
-
-  try {
-    const now = new Date();
-    const { nx, ny } = coordToGrid(lat, lng);
-    const { baseDate, baseTime } = roundToLiveTime(now);
-    const liveUrl = createWeatherUrl('getUltraSrtNcst', baseDate, baseTime, nx, ny, 60);
-
-    const [liveResponse, shortItems] = await Promise.all([
-      fetch(liveUrl, { cache: 'no-store' }),
-      fetchShortItems(nx, ny, now),
-    ]);
-
-    if (!liveResponse.ok) {
-      throw new Error(`live_upstream_${liveResponse.status}`);
-    }
-
-    const liveData = await liveResponse.json();
-    const rawItems = liveData?.response?.body?.items?.item;
-    const liveItems: LiveItem[] = Array.isArray(rawItems) ? rawItems : rawItems ? [rawItems] : [];
-
-    if (liveItems.length === 0) {
-      throw new Error('live_items_missing');
-    }
-
-    const observation = {
-      temp: pickLiveValue(liveItems, 'T1H', 15),
-      humidity: pickLiveValue(liveItems, 'REH', 60),
-      wind: pickLiveValue(liveItems, 'WSD', 1.5),
-      precipitationType: pickLiveValue(liveItems, 'PTY', 0),
-      rainAmount: pickLiveValue(liveItems, 'RN1', 0),
-    };
-
-    const shortMetrics = buildShortMetrics(shortItems, now);
-    const precipNow = observation.precipitationType > 0 || observation.rainAmount > 0;
-    const flags = deriveFlags({
-      tempNow: observation.temp,
-      humidityNow: observation.humidity,
-      windNow: observation.wind,
-      precipNow,
-      shortMetrics,
-    });
-
-    return NextResponse.json(
-      { flags },
-      {
-        status: 200,
-        headers: createCacheHeaders(180),
-      },
-    );
-  } catch (error) {
-    console.error('Live weather API failed', error);
-    return NextResponse.json(
-      { error: 'WEATHER_UPSTREAM_FAILED' },
-      {
-        status: 502,
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          ...createCacheHeaders(60),
-        },
-      },
-    );
+    const w = weights(wx);
+    return NextResponse.json({ wx, weights: w });
+  } catch (e:any) {
+    const w = weights({});
+    return NextResponse.json({ wx: {}, weights: w, note:'fallback' }, { status:200 });
   }
 }
