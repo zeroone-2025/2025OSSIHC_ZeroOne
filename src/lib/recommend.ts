@@ -243,3 +243,72 @@ export function deriveFlags(weather: any): WeatherFlags {
     cold_min: temp < 0
   }
 }
+
+// Legacy wrapper function for backwards compatibility
+export async function recommendRestaurants(
+  menu: string,
+  profile: any,
+  weather: any,
+  userLocation: { lat: number; lng: number },
+  etaThresholdMins: number = 20,
+  maxResults: number = 10,
+  customConfig?: any,
+  sessionContext?: any
+): Promise<any[]> {
+  // For now, return mock data since this function was called by the old system
+  // In a real implementation, this would call Kakao Places API and then getRecommendations
+  console.log(`[recommendRestaurants] Called with menu: ${menu}, location: ${userLocation.lat},${userLocation.lng}`)
+
+  // Mock places data for the legacy interface
+  const mockPlaces: PlaceCandidate[] = [
+    {
+      id: `mock-${menu}-1`,
+      place_name: `${menu} 맛집`,
+      category_name: `음식점 > 한식 > ${menu}`,
+      lat: userLocation.lat + 0.001,
+      lng: userLocation.lng + 0.001,
+      distance: 200,
+      categoryPath: ['음식점', '한식', menu]
+    },
+    {
+      id: `mock-${menu}-2`,
+      place_name: `${menu} 전문점`,
+      category_name: `음식점 > 한식 > ${menu}`,
+      lat: userLocation.lat + 0.002,
+      lng: userLocation.lng + 0.002,
+      distance: 350,
+      categoryPath: ['음식점', '한식', menu]
+    }
+  ]
+
+  const weatherFlags = deriveFlags(weather)
+  const userPreferences = {
+    allergies: profile?.allergies || [],
+    dislikes: profile?.dislikes || []
+  }
+
+  const results = await getRecommendations(mockPlaces, {
+    userPreferences,
+    weather: weatherFlags,
+    maxResults,
+    logger: true
+  })
+
+  // Convert to old format expected by the action
+  return results.map(r => ({
+    id: r.restaurant.id,
+    name: r.restaurant.name,
+    lat: r.restaurant.lat,
+    lng: r.restaurant.lng,
+    categories: [menu],
+    price_tier: 2,
+    tags: r.restaurant.menuTags,
+    allergens: [],
+    macros: { kcal: 400, protein: 20, fat: 10, carb: 50 },
+    season: ['all'],
+    reason: r.reason,
+    score: r.score,
+    etaMins: r.etaMins,
+    badges: r.badges
+  }))
+}

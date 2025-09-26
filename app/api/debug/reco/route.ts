@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getRecommendations, deriveFlags, type PlaceCandidate } from '@/lib/recommend'
 
-// Only allow in non-production environments
-if (process.env.NODE_ENV === 'production') {
-  throw new Error('Debug endpoint not available in production')
-}
+// Only allow in non-production environments (but allow during build)
+const isProduction = process.env.NODE_ENV === 'production' && !process.env.NEXT_PHASE
 
 export async function GET(request: NextRequest) {
+  // Check if this is a production environment at runtime
+  if (isProduction) {
+    return NextResponse.json(
+      { error: 'Debug endpoint not available in production' },
+      { status: 404 }
+    )
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const lat = parseFloat(searchParams.get('lat') || '37.5665')
