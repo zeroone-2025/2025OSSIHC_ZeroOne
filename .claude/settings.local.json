@@ -14,7 +14,12 @@
       "Bash(mkdir:*)",
       "Bash(touch:*)",
       "Bash(npm run typecheck:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(chmod:*)",
+      "Bash(./cleanup_data.sh:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(cp:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
