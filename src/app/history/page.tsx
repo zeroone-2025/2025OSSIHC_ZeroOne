@@ -5,31 +5,46 @@ import { ThumbsUp, ThumbsDown, Star, CheckCircle2 } from 'lucide-react'
 import { Card } from '../_components/Card'
 import { Button } from '../_components/Button'
 import { getVisits, getPendingReview, clearPendingReview, addVisit } from '../../../lib/store'
-import type { Visit, Restaurant } from '../../../lib/types'
+import type { Visit } from '../../../lib/types'
+import { getCoords } from '@/lib/client/geo'
+import { loadNearby, type NearbyPlace } from '@/lib/client/places'
 
 export default function HistoryPage(): React.ReactElement {
   const [visits, setVisits] = useState<Visit[]>([])
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([])
+  const [placesById, setPlacesById] = useState<Record<string, NearbyPlace>>({})
   const [pending, setPending] = useState<{ placeId: string; decidedAt: number } | null>(null)
   const [rating, setRating] = useState<number>(0)
   const [wouldReturn, setWouldReturn] = useState<boolean | null>(null)
   const [tags, setTags] = useState<string[]>([])
   const [toast, setToast] = useState<string | null>(null)
+  const [placesError, setPlacesError] = useState<string | null>(null)
 
   useEffect(() => {
-    async function load() {
+    const history = getVisits().sort((a, b) => b.timestamp - a.timestamp).slice(0, 30)
+    setVisits(history)
+    setPending(getPendingReview())
+
+    let cancelled = false
+
+    ;(async () => {
       try {
-        const response = await fetch('/data/restaurants.json')
-        const data: Restaurant[] = await response.json()
-        setRestaurants(data)
-      } catch (error) {
-        console.error('Failed to load restaurants', error)
+        const { lat, lng } = await getCoords()
+        const nearby = await loadNearby(lat, lng, 1500)
+        if (!cancelled) {
+          const map = Object.fromEntries(nearby.map((place) => [place.id, place]))
+          setPlacesById(map)
+          setPlacesError(null)
+        }
+      } catch (error: any) {
+        if (!cancelled) {
+          setPlacesError(error?.message || '주변 장소를 불러오지 못했습니다.')
+        }
       }
-      const history = getVisits().sort((a, b) => b.timestamp - a.timestamp).slice(0, 30)
-      setVisits(history)
-      setPending(getPendingReview())
+    })()
+
+    return () => {
+      cancelled = true
     }
-    load()
   }, [])
 
   useEffect(() => {
@@ -38,14 +53,18 @@ export default function HistoryPage(): React.ReactElement {
     return () => clearTimeout(timer)
   }, [toast])
 
-  const visitCards = useMemo(() => visits.map((visit) => ({
-    visit,
-    restaurant: restaurants.find((item) => item.id === visit.restaurantId) ?? null,
-  })), [visits, restaurants])
+  const visitCards = useMemo(
+    () =>
+      visits.map((visit) => ({
+        visit,
+        place: placesById[visit.restaurantId] ?? null,
+      })),
+    [visits, placesById]
+  )
 
-  const pendingRestaurant = useMemo(
-    () => restaurants.find((item) => item.id === pending?.placeId) ?? null,
-    [pending, restaurants]
+  const pendingPlace = useMemo(
+    () => (pending ? placesById[pending.placeId] ?? null : null),
+    [pending, placesById]
   )
 
   const toggleTag = (tag: string) => {
@@ -81,17 +100,26 @@ export default function HistoryPage(): React.ReactElement {
       <Card tone="soft" className="space-y-2 p-5">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">방문 기록</h1>
-          {pending && <span className="rounded-full border border-brand-sub1/60 bg-brand-sub2/20 px-3 py-1 text-xs font-semibold text-brand-sub1">평가 작성</span>}
+          {pending && (
+            <span className="rounded-full border border-brand-sub1/60 bg-brand-sub2/20 px-3 py-1 text-xs font-semibold text-brand-sub1">
+              평가 작성
+            </span>
+          )}
         </div>
         <p className="text-sm text-gray-500">좋아요·패스 기록과 평가 요청을 확인하세요.</p>
+        {placesError && (
+          <p className="text-xs text-critical">{placesError}</p>
+        )}
       </Card>
 
-      {pending && pendingRestaurant && (
+      {pending && (
         <Card tone="lifted" className="p-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">평가 대기 중</h2>
-              <p className="text-sm text-gray-500">{pendingRestaurant.name}</p>
+              <p className="text-sm text-gray-500">
+                {pendingPlace?.name ?? `알 수 없는 장소 (${pending.placeId})`}
+              </p>
             </div>
             <span className="text-xs text-gray-400">{formatRelative(pending.decidedAt)}</span>
           </div>
@@ -168,34 +196,36 @@ export default function HistoryPage(): React.ReactElement {
             아직 기록이 없습니다. 추천에서 좋아요 또는 패스를 눌러 주세요.
           </Card>
         ) : (
-          visitCards.map(({ visit, restaurant }) => {
-            if (!restaurant) return null
-            return (
-              <Card key={`${visit.restaurantId}-${visit.timestamp}`} tone="soft" className="p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{restaurant.name}</h3>
-                    <p className="text-sm text-gray-500">{restaurant.category}</p>
-                  </div>
-                  <span className="text-xs text-gray-400">{formatRelative(visit.timestamp)}</span>
+          visitCards.map(({ visit, place }) => (
+            <Card key={`${visit.restaurantId}-${visit.timestamp}`} tone="soft" className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {place?.name ?? '알 수 없는 장소'}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {place?.categoryPath?.filter(Boolean).join(' > ') ?? visit.restaurantId}
+                  </p>
+                  {place?.address && <p className="text-xs text-gray-400 mt-1">{place.address}</p>}
                 </div>
-                <div className="mt-4 flex items-center gap-2 text-sm">
-                  {visit.liked ? (
-                    <span className="flex items-center gap-1 rounded-full border border-brand-sub1/60 bg-brand-sub1/20 px-3 py-1 text-brand-sub1">
-                      <ThumbsUp size={16} /> 좋아요
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 rounded-full border border-critical/30 bg-critical/10 px-3 py-1 text-critical">
-                      <ThumbsDown size={16} /> 패스
-                    </span>
-                  )}
-                  {visit.reason && (
-                    <span className="rounded-full border border-brand-sub1/60 bg-white px-3 py-1 text-xs text-brand-sub1 shadow-sm">{visit.reason}</span>
-                  )}
-                </div>
-              </Card>
-            )
-          })
+                <span className="text-xs text-gray-400">{formatRelative(visit.timestamp)}</span>
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-sm">
+                {visit.liked ? (
+                  <span className="flex items-center gap-1 rounded-full border border-brand-sub1/60 bg-brand-sub1/20 px-3 py-1 text-brand-sub1">
+                    <ThumbsUp size={16} /> 좋아요
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 rounded-full border border-critical/30 bg-critical/10 px-3 py-1 text-critical">
+                    <ThumbsDown size={16} /> 패스
+                  </span>
+                )}
+                {visit.reason && (
+                  <span className="rounded-full border border-brand-sub1/60 bg-white px-3 py-1 text-xs text-brand-sub1 shadow-sm">{visit.reason}</span>
+                )}
+              </div>
+            </Card>
+          ))
         )}
       </section>
 
