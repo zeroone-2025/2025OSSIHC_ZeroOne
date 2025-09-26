@@ -68,13 +68,15 @@ export function tagsFromCategory(levels: string[], map: CategoryTagMap = default
   const normalizedLeaf = getNormalizedBucket(map.leaf, defaultMap.leaf, defaultNormalized.leaf)
   const normalizedMid = getNormalizedBucket(map.mid, defaultMap.mid, defaultNormalized.mid)
 
+  // First try leaf for the last level
   const leafLevel = levels[levels.length - 1]
   const leafResult = resolveTags(leafLevel, map.leaf ?? {}, normalizedLeaf, 'leaf')
   if (leafResult) {
     return leafResult
   }
 
-  for (let i = levels.length - 2; i >= 0; i -= 1) {
+  // Then try mid for all levels, starting from the end
+  for (let i = levels.length - 1; i >= 0; i -= 1) {
     const level = levels[i]
     const midResult = resolveTags(level, map.mid ?? {}, normalizedMid, 'mid')
     if (midResult) {

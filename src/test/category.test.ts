@@ -27,6 +27,12 @@ describe('category mapping utilities', () => {
     expect(tags.find((tag) => tag.startsWith('noodle'))).toBeDefined()
   })
 
+  it('returns none strength for unmapped categories', () => {
+    const { tags, strength } = tagsFromCategory(['음식점', '알수없음', '기타'])
+    expect(strength).toBe('none')
+    expect(tags).toEqual([])
+  })
+
   it('normalizes Kakao place payload with menu tags and eta', () => {
     const place = normalizePlace({
       id: 'p1',
