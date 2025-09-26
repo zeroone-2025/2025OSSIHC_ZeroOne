@@ -5,6 +5,7 @@ on:
   workflow_dispatch: {}
 
 env:
+  # This section is now just for reference, the script uses a hardcoded path.
   APP_DIR: /var/www/whymeal/2025OSSIHC_ZeroOne
   PM2_NAME: whymeal
 
@@ -35,7 +36,13 @@ jobs:
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             
-            cd $APP_DIR
+            # --- FIX: Use absolute path to ensure correct directory ---
+            cd /var/www/whymeal/2025OSSIHC_ZeroOne
+            
+            # --- DEBUG: Confirm current directory ---
+            echo "✅ Successfully moved to directory:"
+            pwd
+
             git fetch --all
             git reset --hard origin/main
 
@@ -51,7 +58,8 @@ jobs:
             fi
             
             NODE_ENV=production npm run build
-            pm2 restart $PM2_NAME || pm2 start npm --name "$PM2_NAME" -- start
+            # --- FIX: Use workflow env context for PM2 name ---
+            pm2 restart ${{ env.PM2_NAME }} || pm2 start npm --name "${{ env.PM2_NAME }}" -- start
             pm2 save
             pm2 ls
             ss -ltnp | grep -E ':3000|:8080' || true
