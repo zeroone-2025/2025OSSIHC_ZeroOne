@@ -36,10 +36,8 @@ jobs:
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             
-            # --- FIX: Use absolute path to ensure correct directory ---
             cd /var/www/whymeal/2025OSSIHC_ZeroOne
             
-            # --- DEBUG: Confirm current directory ---
             echo "✅ Successfully moved to directory:"
             pwd
 
@@ -49,15 +47,24 @@ jobs:
             # 🔧 package.json에 build/start 없으면 자동 추가
             node -e "let p=require('./package.json');p.scripts=p.scripts||{};if(!p.scripts.build)p.scripts.build='next build';if(!p.scripts.start)p.scripts.start='next start -p 8080';require('fs').writeFileSync('package.json',JSON.stringify(p,null,2))"
 
-            rm -rf .next 
+            # --- 💡 FIX: 이전 빌드 찌꺼기 및 캐시를 완전히 삭제하여 깨끗한 설치 환경을 보장합니다 ---
+            echo "🧹 Cleaning up previous build artifacts and node modules..."
+            rm -rf .next node_modules
+            npm cache clean --force
+            echo "✅ Cleanup complete."
 
+            echo "📦 Installing dependencies..."
             if [ -f package-lock.json ]; then
               npm ci
             else
               npm install
             fi
+            echo "✅ Dependencies installed."
             
+            echo "🚀 Building the application..."
             NODE_ENV=production npm run build
+            echo "✅ Build successful."
+
             # --- FIX: Use workflow env context for PM2 name ---
             pm2 restart ${{ env.PM2_NAME }} || pm2 start npm --name "${{ env.PM2_NAME }}" -- start
             pm2 save
