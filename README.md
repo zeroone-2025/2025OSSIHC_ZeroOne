@@ -1,4 +1,9 @@
 # 2025OSSIHC_ZeroOne
+<<<<<<< HEAD
+
+2025년 오픈소스 SW 아이디어 해커톤 캠프\_ZeroOne
+git test1 peh
+=======
 2025년 오픈소스 SW 아이디어 해커톤 캠프_ZeroOne
 
 ## 프로젝트 설정 및 실행 방법
@@ -21,3 +26,4 @@ npm start
 - Tailwind CSS 3.4.17
 - Lucide React (아이콘)
 - Testing Library
+>>>>>>> ac816c17a0bec8651fa47870332e9381bb69796a
