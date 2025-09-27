@@ -118,6 +118,30 @@ export async function fetchUltraNcst(nx: number, ny: number, base_date: string, 
   return map; // keys: T1H, REH, WSD, RN1 등
 }
 
+// 원본 응답과 함께 반환하는 버전
+export async function fetchUltraNcstWithRaw(nx: number, ny: number, base_date: string, base_time: string) {
+  const url = new URL("http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst");
+  url.searchParams.set("serviceKey", KMA_KEY || "");
+  url.searchParams.set("pageNo", "1");
+  url.searchParams.set("numOfRows", "60");
+  url.searchParams.set("dataType", "JSON");
+  url.searchParams.set("base_date", base_date);
+  url.searchParams.set("base_time", base_time);
+  url.searchParams.set("nx", String(nx));
+  url.searchParams.set("ny", String(ny));
+
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  if (!res.ok) throw new Error(`UltraNcst HTTP ${res.status}`);
+  const json = await res.json();
+  const items = json?.response?.body?.items?.item ?? [];
+  const map: NcstMap = {};
+  for (const it of items) {
+    const p = NcstItem.safeParse(it);
+    if (p.success) map[p.data.category] = String(p.data.obsrValue);
+  }
+  return { data: map, rawResponse: json };
+}
+
 export async function fetchVilageFcst(nx: number, ny: number, base_date: string, base_time: string) {
   const url = new URL("http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst");
   url.searchParams.set("serviceKey", KMA_KEY || "");
@@ -142,4 +166,31 @@ export async function fetchVilageFcst(nx: number, ny: number, base_date: string,
     }
   }
   return map; // keys: SKY, PTY, PCP, SNO 등(문자값 포함)
+}
+
+// 원본 응답과 함께 반환하는 버전
+export async function fetchVilageFcstWithRaw(nx: number, ny: number, base_date: string, base_time: string) {
+  const url = new URL("http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst");
+  url.searchParams.set("serviceKey", KMA_KEY || "");
+  url.searchParams.set("pageNo", "1");
+  url.searchParams.set("numOfRows", "300");
+  url.searchParams.set("dataType", "JSON");
+  url.searchParams.set("base_date", base_date);
+  url.searchParams.set("base_time", base_time);
+  url.searchParams.set("nx", String(nx));
+  url.searchParams.set("ny", String(ny));
+
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  if (!res.ok) throw new Error(`VilageFcst HTTP ${res.status}`);
+  const json = await res.json();
+  const items = json?.response?.body?.items?.item ?? [];
+  const map: FcstMap = {};
+  // 가장 가까운 현재시각(hour) 예보 1개를 잡는 단순화: 같은 카테고리의 첫 값 사용
+  for (const it of items) {
+    const p = FcstItem.safeParse(it);
+    if (p.success && map[p.data.category] === undefined) {
+      map[p.data.category] = String(p.data.fcstValue);
+    }
+  }
+  return { data: map, rawResponse: json };
 }
