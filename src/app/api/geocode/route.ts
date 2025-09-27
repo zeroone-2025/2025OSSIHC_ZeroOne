@@ -1,7 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
-import { findNearestCity } from "@/lib/geocode/korea";
 
 export const dynamic = "force-dynamic";
+
+interface KakaoAddressResponse {
+  documents: Array<{
+    address: {
+      address_name: string;
+      region_1depth_name: string; // 시/도
+      region_2depth_name: string; // 시/군/구
+      region_3depth_name: string; // 동/읍/면
+      main_address_no: string;
+      sub_address_no: string;
+    };
+    road_address?: {
+      address_name: string;
+      region_1depth_name: string;
+      region_2depth_name: string;
+      region_3depth_name: string;
+      road_name: string;
+      underground_yn: string;
+      main_building_no: string;
+      sub_building_no: string;
+      building_name: string;
+    };
+  }>;
+}
+
+interface KakaoKeywordResponse {
+  documents: Array<{
+    place_name: string;
+    category_name: string;
+    category_group_code: string;
+    category_group_name: string;
+    phone: string;
+    address_name: string;
+    road_address_name: string;
+    id: string;
+    place_url: string;
+    distance: string;
+    x: string; // 경도
+    y: string; // 위도
+  }>;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,118 +53,173 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "MISSING_COORDS" }, { status: 400 });
     }
 
-    // 카카오 REST API 키가 있는 경우 카카오 API 사용
-    if (process.env.KAKAO_REST_API_KEY) {
-      try {
-        const response = await fetch(
-          `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lng}&y=${lat}`,
-          {
-            headers: {
-              Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          const document = data.documents?.[0];
-
-          if (document) {
-            const roadAddress = document.road_address;
-            const jibunAddress = document.address;
-
-            // 도로명 주소 우선, 없으면 지번 주소
-            const address = roadAddress || jibunAddress;
-
-            if (address) {
-              const fullAddress = roadAddress
-                ? `${address.region_1depth_name} ${address.region_2depth_name} ${address.region_3depth_name}`
-                : `${address.region_1depth_name} ${address.region_2depth_name} ${address.region_3depth_name}`;
-
-              return NextResponse.json({
-                address: fullAddress,
-                city: address.region_1depth_name, // 시/도
-                district: address.region_2depth_name, // 시/군/구
-                dong: address.region_3depth_name, // 동/읍/면
-                full: roadAddress
-                  ? `${address.region_1depth_name} ${address.region_2depth_name} ${address.region_3depth_name} ${roadAddress.road_name} ${roadAddress.main_building_no}${roadAddress.sub_building_no ? '-' + roadAddress.sub_building_no : ''}`
-                  : `${address.region_1depth_name} ${address.region_2depth_name} ${address.region_3depth_name} ${jibunAddress.main_address_no}${jibunAddress.sub_address_no ? '-' + jibunAddress.sub_address_no : ''}`,
-                source: "kakao"
-              });
-            }
-          }
-        }
-      } catch (kakaoError) {
-        console.warn("Kakao geocoding failed:", kakaoError);
-      }
+    if (!process.env.KAKAO_REST_API_KEY) {
+      return NextResponse.json({
+        error: "NO_KAKAO_KEY",
+        message: "카카오 REST API 키가 필요합니다. .env.local에 KAKAO_REST_API_KEY를 설정해주세요."
+      }, { status: 503 });
     }
 
-    // Nominatim API fallback (무료, 하지만 한국 주소 정확도가 떨어짐)
+    const headers = {
+      Authorization: `KakaoAK ${process.env.KAKAO_REST_API_KEY}`,
+    };
+
     try {
-      console.log(`Trying Nominatim for ${lat}, ${lng}`);
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=ko&zoom=18&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'WhatMeal-App/1.0'
-          }
-        }
+      // 1단계: 주변 500m 이내 주요 장소(POI) 검색 - 학교 카테고리
+      const nearbyPlacesResponse = await fetch(
+        `https://dapi.kakao.com/v2/local/search/category.json?category_group_code=SC4&x=${lng}&y=${lat}&radius=500&sort=distance`,
+        { headers }
       );
 
-      console.log(`Nominatim response status: ${response.status}`);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Nominatim data:", JSON.stringify(data, null, 2));
-
-        if (data.address) {
-          const addr = data.address;
-          // OpenStreetMap 한국 주소 구조 개선
-          const city = addr.city || addr.county || addr.state || addr.province;
-          const district = addr.city_district || addr.suburb || addr.borough || addr.town || addr.municipality;
-          const dong = addr.neighbourhood || addr.quarter || addr.hamlet || addr.village || addr.residential;
-
-          const addressText = `${city || ''} ${district || ''} ${dong || ''}`.trim();
-
-          return NextResponse.json({
-            address: addressText || data.display_name,
-            city: city || '',
-            district: district || '',
-            dong: dong || '',
-            full: data.display_name,
-            source: "nominatim"
-          });
+      let nearbyPlace = null;
+      if (nearbyPlacesResponse.ok) {
+        const nearbyData: KakaoKeywordResponse = await nearbyPlacesResponse.json();
+        // 가장 가까운 주요 장소 선택
+        if (nearbyData.documents && nearbyData.documents.length > 0) {
+          nearbyPlace = nearbyData.documents[0];
         }
-      } else {
-        console.warn(`Nominatim API failed with status ${response.status}`);
       }
-    } catch (nominatimError) {
-      console.warn("Nominatim geocoding failed:", nominatimError);
-    }
 
-    // 로컬 데이터베이스에서 가장 가까운 도시 찾기
-    const nearestCity = findNearestCity(parseFloat(lat), parseFloat(lng));
+      // 2단계: 키워드 검색으로 주변 건물/대학교/병원 등 찾기
+      const keywordResponse = await fetch(
+        `https://dapi.kakao.com/v2/local/search/keyword.json?query=대학교 병원 학교&x=${lng}&y=${lat}&radius=500&sort=distance`,
+        { headers }
+      );
 
-    if (nearestCity) {
+      let keywordPlace = null;
+      if (keywordResponse.ok) {
+        const keywordData: KakaoKeywordResponse = await keywordResponse.json();
+        // 대학교, 병원, 주요 건물 우선 선택
+        const priorityPlace = keywordData.documents?.find(place =>
+          place.category_name.includes('대학교') ||
+          place.category_name.includes('병원') ||
+          place.category_name.includes('학교') ||
+          place.category_name.includes('관공서') ||
+          place.place_name.includes('대학교') ||
+          place.place_name.includes('병원') ||
+          place.place_name.includes('캠퍼스')
+        );
+
+        keywordPlace = priorityPlace || keywordData.documents?.[0];
+      }
+
+      // 3단계: 기본 주소 변환
+      const addressResponse = await fetch(
+        `https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lng}&y=${lat}`,
+        { headers }
+      );
+
+      if (!addressResponse.ok) {
+        throw new Error(`카카오 지도 API 오류: ${addressResponse.status}`);
+      }
+
+      const addressData: KakaoAddressResponse = await addressResponse.json();
+      const document = addressData.documents?.[0];
+
+      if (!document) {
+        throw new Error("주소 정보를 찾을 수 없습니다");
+      }
+
+      const roadAddress = document.road_address;
+      const jibunAddress = document.address;
+      const baseAddress = roadAddress || jibunAddress;
+
+      // 결과 조합: 주요 장소가 있으면 우선 표시
+      let displayName = "";
+      let category = "";
+      let icon = "📍";
+
+      if (keywordPlace) {
+        displayName = keywordPlace.place_name;
+
+        // 카테고리별 아이콘 설정
+        if (keywordPlace.category_name.includes('대학교') || keywordPlace.place_name.includes('대학교')) {
+          icon = "🎓";
+          category = "university";
+        } else if (keywordPlace.category_name.includes('병원')) {
+          icon = "🏥";
+          category = "hospital";
+        } else if (keywordPlace.category_name.includes('학교')) {
+          icon = "🏫";
+          category = "school";
+        } else if (keywordPlace.category_name.includes('관공서')) {
+          icon = "🏛️";
+          category = "government";
+        } else if (keywordPlace.category_name.includes('지하철역') || keywordPlace.place_name.includes('역')) {
+          icon = "🚇";
+          category = "station";
+        } else if (keywordPlace.category_name.includes('마트') || keywordPlace.category_name.includes('쇼핑')) {
+          icon = "🛍️";
+          category = "shopping";
+        } else {
+          icon = "🏢";
+          category = "building";
+        }
+      } else if (nearbyPlace) {
+        displayName = nearbyPlace.place_name;
+        category = "nearby";
+
+        // 학교 카테고리에서 찾은 경우 적절한 아이콘 적용
+        if (nearbyPlace.place_name.includes('대학교') || nearbyPlace.place_name.includes('대학') || nearbyPlace.place_name.includes('캠퍼스')) {
+          icon = "🎓";
+          category = "university";
+        } else if (nearbyPlace.place_name.includes('초등학교') || nearbyPlace.place_name.includes('중학교') || nearbyPlace.place_name.includes('고등학교') || nearbyPlace.place_name.includes('학교')) {
+          icon = "🏫";
+          category = "school";
+        }
+      }
+
+      // 주소 구성
+      const city = baseAddress.region_1depth_name;
+      const district = baseAddress.region_2depth_name;
+      const dong = baseAddress.region_3depth_name;
+
+      let finalAddress = "";
+      let fullAddress = "";
+
+      if (displayName) {
+        finalAddress = `${icon} ${displayName}`;
+        fullAddress = `${city} ${district} ${dong} ${displayName}`;
+      } else {
+        finalAddress = `${city} ${district} ${dong}`;
+        fullAddress = roadAddress
+          ? `${city} ${district} ${dong} ${roadAddress.road_name} ${roadAddress.main_building_no}${roadAddress.sub_building_no ? '-' + roadAddress.sub_building_no : ''}`
+          : `${city} ${district} ${dong} ${jibunAddress.main_address_no}${jibunAddress.sub_address_no ? '-' + jibunAddress.sub_address_no : ''}`;
+      }
+
+      const result = {
+        address: finalAddress,
+        city: city,
+        district: district,
+        dong: dong,
+        full: fullAddress,
+        source: "kakao",
+        ...(displayName && {
+          poi: {
+            name: displayName,
+            category: category,
+            icon: icon,
+            distance: keywordPlace?.distance || nearbyPlace?.distance
+          }
+        })
+      };
+
+      return NextResponse.json(result);
+
+    } catch (kakaoError: any) {
+      console.error("카카오 지도 API 오류:", kakaoError);
+
+      // 카카오 API 실패시 간단한 fallback
       return NextResponse.json({
-        address: `${nearestCity.city} ${nearestCity.district} ${nearestCity.dong || ''}`.trim(),
-        city: nearestCity.city,
-        district: nearestCity.district,
-        dong: nearestCity.dong || '',
-        full: `${nearestCity.city} ${nearestCity.district} ${nearestCity.dong || ''}`.trim(),
-        source: "local_database"
+        address: `위도 ${parseFloat(lat).toFixed(4)}, 경도 ${parseFloat(lng).toFixed(4)}`,
+        city: "",
+        district: "",
+        dong: "",
+        full: `카카오 API 오류: ${kakaoError.message}`,
+        source: "fallback",
+        error: "KAKAO_API_FAILED"
       });
     }
-
-    // 모든 방법 실패시 좌표만 반환
-    return NextResponse.json({
-      address: `위도 ${parseFloat(lat).toFixed(4)}, 경도 ${parseFloat(lng).toFixed(4)}`,
-      city: "",
-      district: "",
-      dong: "",
-      full: `좌표: ${lat}, ${lng}`,
-      source: "coordinates"
-    });
 
   } catch (error: any) {
     console.error("Geocoding API failed:", error);
