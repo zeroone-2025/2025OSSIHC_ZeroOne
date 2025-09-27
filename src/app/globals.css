@@ -35,14 +35,10 @@ button:focus-visible {
 
 /* Gradient background for the action button */
 .gradient-background {
-  background: conic-gradient(
-    at 50% 50%,
-    #60a5fa 0%,
-    #a78bfa 30%,
-    #f472b6 55%,
-    #f97316 80%,
-    #60a5fa 100%
-  );
+  background: linear-gradient(180deg, #0ea5e9 0%, #2563eb 100%);
+}
+.dark .gradient-background {
+  background: linear-gradient(180deg, #0b3a66 0%, #0f172a 100%);
 }
 
 /* Custom background classes */

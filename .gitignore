@@ -84,3 +84,5 @@ logs
 *.njsproj
 *.sln
 *.sw?
+
+src/data/kfood
