@@ -9,6 +9,42 @@ type Weights = {
   W_rain: number; W_snow: number;
 };
 
+// 날씨 데이터를 flags로 변환하는 함수
+function generateWeatherFlags(raw: any): string[] {
+  const flags: string[] = [];
+
+  if (!raw) return flags;
+
+  // 온도 기반
+  if (typeof raw.T1H === 'number') {
+    if (raw.T1H >= 28) flags.push('hot');
+    if (raw.T1H <= 5) flags.push('cold');
+  }
+
+  // 강수 형태
+  if (raw.PTY) {
+    if (raw.PTY === 1 || raw.PTY === 4) flags.push('rain');
+    if (raw.PTY === 2 || raw.PTY === 3) flags.push('snow');
+  }
+
+  // 하늘 상태
+  if (raw.SKY) {
+    if (raw.SKY >= 3) flags.push('cloudy');
+  }
+
+  // 습도
+  if (typeof raw.REH === 'number' && raw.REH >= 80) {
+    flags.push('humid');
+  }
+
+  // 풍속
+  if (typeof raw.WSD === 'number' && raw.WSD >= 4) {
+    flags.push('windy');
+  }
+
+  return flags;
+}
+
 // 메뉴 계수(A~H) 기본값 (없으면 균등 가중치로 시작)
 // 필요시 확장: 메뉴군별로 계수 차등화
 const DEFAULT_COEFF = {
@@ -80,7 +116,7 @@ export async function POST(req: NextRequest) {
         .map((menu) => ({ ...menu, score: Number.isFinite(menu.score) ? menu.score : 0 }))
         .sort((a, b) => b.score - a.score)
         .slice(0, 10);
-      return NextResponse.json({ weights: fallback, menus });
+      return NextResponse.json({ weights: fallback, menus, flags: [] });
     }
 
     const { weights, raw } = await wres.json() as { weights: Weights; raw: any };
@@ -100,7 +136,10 @@ export async function POST(req: NextRequest) {
       : [];
     const sortedMenus = safeMenus.sort((a, b) => b.score - a.score).slice(0, 10);
 
-    return NextResponse.json({ raw, weights, menus: sortedMenus });
+    // 날씨 데이터로부터 flags 생성
+    const flags = generateWeatherFlags(raw);
+
+    return NextResponse.json({ raw, weights, menus: sortedMenus, flags });
   } catch (e: any) {
     return NextResponse.json({ error: "SERVER_ERROR", detail: String(e?.message || e) }, { status: 500 });
   }
