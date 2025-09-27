@@ -1,0 +1,60 @@
+{
+  "menus": [
+    { "name": "칼국수", "score": 0.91, "imageUrl": "/kfood/국수/칼국수/1.jpg" },
+    { "name": "파전", "score": 0.85 },
+    { "name": "국밥", "score": 0.82 }
+  ],
+  "weights": {
+    "W_cold": 0.6,
+    "W_hot": 0.0,
+    "W_humidity": 0.4,
+    "W_wind": 0.2,
+    "W_sunny": 0.1,
+    "W_cloudy": 0.9,
+    "W_rain": 0.8,
+    "W_snow": 0
+  },
+  "raw": {
+    "ncst": {
+      "response": {
+        "header": { "resultCode": "00", "resultMsg": "NORMAL_SERVICE" },
+        "body": {
+          "items": {
+            "item": [
+              { "category": "T1H", "obsrValue": "18.4" },
+              { "category": "REH", "obsrValue": "65" },
+              { "category": "WSD", "obsrValue": "2.1" },
+              { "category": "RN1", "obsrValue": "0" }
+            ]
+          }
+        }
+      }
+    },
+    "fcst": {
+      "response": {
+        "header": { "resultCode": "00", "resultMsg": "NORMAL_SERVICE" },
+        "body": {
+          "items": {
+            "item": [
+              { "category": "SKY", "fcstValue": "3" },
+              { "category": "PTY", "fcstValue": "1" },
+              { "category": "PCP", "fcstValue": "1.0mm" },
+              { "category": "SNO", "fcstValue": "적설없음" }
+            ]
+          }
+        }
+      }
+    },
+    "processed": {
+      "T1H": 18.4,
+      "REH": 65,
+      "WSD": 2.1,
+      "SKY": 3,
+      "PTY": 1,
+      "PCP": 1.0,
+      "SNO": 0,
+      "RN1": 0
+    }
+  },
+  "flags": ["rain", "cloudy"]
+}

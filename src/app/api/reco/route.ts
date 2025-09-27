@@ -15,30 +15,33 @@ function generateWeatherFlags(raw: any): string[] {
 
   if (!raw) return flags;
 
+  // raw.processed에서 처리된 데이터 추출 (fallback으로 raw 직접 접근)
+  const processed = raw.processed || raw;
+
   // 온도 기반
-  if (typeof raw.T1H === 'number') {
-    if (raw.T1H >= 28) flags.push('hot');
-    if (raw.T1H <= 5) flags.push('cold');
+  if (typeof processed.T1H === 'number') {
+    if (processed.T1H >= 28) flags.push('hot');
+    if (processed.T1H <= 5) flags.push('cold');
   }
 
   // 강수 형태
-  if (raw.PTY) {
-    if (raw.PTY === 1 || raw.PTY === 4) flags.push('rain');
-    if (raw.PTY === 2 || raw.PTY === 3) flags.push('snow');
+  if (processed.PTY) {
+    if (processed.PTY === 1 || processed.PTY === 4) flags.push('rain');
+    if (processed.PTY === 2 || processed.PTY === 3) flags.push('snow');
   }
 
   // 하늘 상태
-  if (raw.SKY) {
-    if (raw.SKY >= 3) flags.push('cloudy');
+  if (processed.SKY) {
+    if (processed.SKY >= 3) flags.push('cloudy');
   }
 
   // 습도
-  if (typeof raw.REH === 'number' && raw.REH >= 80) {
+  if (typeof processed.REH === 'number' && processed.REH >= 80) {
     flags.push('humid');
   }
 
   // 풍속
-  if (typeof raw.WSD === 'number' && raw.WSD >= 4) {
+  if (typeof processed.WSD === 'number' && processed.WSD >= 4) {
     flags.push('windy');
   }
 
@@ -100,26 +103,45 @@ export async function POST(req: NextRequest) {
 
     const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
     const wres = await fetch(new URL("/api/weather/live?lat=" + lat + "&lng=" + lng, base).toString(), { cache: "no-store" });
+
+    let weights: Weights;
+    let rawWeatherData: any = null;
+
     if (!wres.ok) {
+      console.warn("Weather API failed, using fallback weights");
       // 날씨 실패 시 가을철 임시 가중치(선형 중간값) 적용
-      const fallback: Weights = {
+      weights = {
         W_cold: 0.4, W_hot: 0.2,
         W_humidity: 0.3, W_wind: 0.2,
         W_sunny: 0.5, W_cloudy: 0.5,
         W_rain: 0.3, W_snow: 0.0,
       };
-      const dataset = loadDataset();
-      const menus = (dataset.length ? dataset.map((d: any) => d?.name ?? d?.name_ko ?? d?.id) : ["국밥", "비빔밥", "칼국수", "파전", "냉면", "라멘"])
-        .filter((name: unknown): name is string => typeof name === "string" && name.length > 0)
-        .slice(0, 100)
-        .map((name) => ({ name, score: scoreMenu(name, fallback) }))
-        .map((menu) => ({ ...menu, score: Number.isFinite(menu.score) ? menu.score : 0 }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 10);
-      return NextResponse.json({ weights: fallback, menus, flags: [] });
-    }
+    } else {
+      try {
+        const weatherData = await wres.json();
+        weights = weatherData.weights || {};
+        rawWeatherData = weatherData.raw;
 
-    const { weights, raw } = await wres.json() as { weights: Weights; raw: any };
+        // 가중치가 비어있는 경우 fallback 사용
+        if (!weights || Object.keys(weights).length === 0) {
+          console.warn("Empty weights from weather API, using fallback");
+          weights = {
+            W_cold: 0.4, W_hot: 0.2,
+            W_humidity: 0.3, W_wind: 0.2,
+            W_sunny: 0.5, W_cloudy: 0.5,
+            W_rain: 0.3, W_snow: 0.0,
+          };
+        }
+      } catch (parseError) {
+        console.warn("Failed to parse weather API response, using fallback weights");
+        weights = {
+          W_cold: 0.4, W_hot: 0.2,
+          W_humidity: 0.3, W_wind: 0.2,
+          W_sunny: 0.5, W_cloudy: 0.5,
+          W_rain: 0.3, W_snow: 0.0,
+        };
+      }
+    }
     const dataset = loadDataset();
 
     const pool: string[] = dataset.length
@@ -137,9 +159,14 @@ export async function POST(req: NextRequest) {
     const sortedMenus = safeMenus.sort((a, b) => b.score - a.score).slice(0, 10);
 
     // 날씨 데이터로부터 flags 생성
-    const flags = generateWeatherFlags(raw);
+    const flags = generateWeatherFlags(rawWeatherData);
 
-    return NextResponse.json({ raw, weights, menus: sortedMenus, flags });
+    return NextResponse.json({
+      menus: sortedMenus,
+      weights,
+      raw: rawWeatherData,
+      flags
+    });
   } catch (e: any) {
     return NextResponse.json({ error: "SERVER_ERROR", detail: String(e?.message || e) }, { status: 500 });
   }
