@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom CSS Variables for theming */
+:root {
+  --background-light: #f8fafc;
+  --background-dark: #0f172a;
+  --primary: #3b82f6;
+}
+
 body {
   @apply min-h-screen bg-brand-bg text-[#1f1f1f];
 }
@@ -22,4 +29,39 @@ a:focus-visible,
 button:focus-visible {
   outline: 2px solid #FA812F;
   outline-offset: 2px;
+}
+
+/* Gradient background for the action button */
+.gradient-background {
+  background: conic-gradient(
+    at 50% 50%,
+    #60a5fa 0%,
+    #a78bfa 30%,
+    #f472b6 55%,
+    #f97316 80%,
+    #60a5fa 100%
+  );
+}
+
+/* Custom background classes */
+.bg-background-light {
+  background-color: var(--background-light);
+}
+
+.bg-background-dark {
+  background-color: var(--background-dark);
+}
+
+/* Primary color class */
+.text-primary {
+  color: var(--primary);
+}
+
+.bg-primary\/20 {
+  background-color: rgb(59 130 246 / 0.2);
+}
+
+/* Font display class */
+.font-display {
+  font-family: system-ui, -apple-system, sans-serif;
 }

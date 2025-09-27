@@ -44,22 +44,17 @@ export async function POST(req: NextRequest) {
     const flags = deriveFlags(weatherData);
     const rankedDishes = rankDishes(weatherData, topN);
 
-    // Format response
-    const items = rankedDishes.map(dish => ({
-      id: dish.id,
-      name: dish.name_ko,
-      name_en: dish.name_en,
-      category: dish.category,
-      score: Math.round(dish.score * 100) / 100, // Round to 2 decimal places
-      tags: dish.tags,
-      price_tier: dish.price_tier,
-      average_price_krw: dish.average_price_krw
-    }));
+    // Format response - convert flags object to string array
+    const flagsArray = Object.entries(flags)
+      .filter(([_, value]) => value > 0.3)
+      .map(([key, _]) => key);
+
+    // Get menu names from ranked dishes
+    const menus = rankedDishes.map(dish => dish.name_ko);
 
     return NextResponse.json({
-      weather: weatherData,
-      flags,
-      items,
+      menus,
+      flags: flagsArray,
       source
     });
 
@@ -69,21 +64,16 @@ export async function POST(req: NextRequest) {
     const flags = deriveFlags(fallbackWeather);
     const rankedDishes = rankDishes(fallbackWeather, 5);
 
-    const items = rankedDishes.map(dish => ({
-      id: dish.id,
-      name: dish.name_ko,
-      name_en: dish.name_en,
-      category: dish.category,
-      score: Math.round(dish.score * 100) / 100,
-      tags: dish.tags,
-      price_tier: dish.price_tier,
-      average_price_krw: dish.average_price_krw
-    }));
+    // Format fallback response
+    const flagsArray = Object.entries(flags)
+      .filter(([_, value]) => value > 0.3)
+      .map(([key, _]) => key);
+
+    const menus = rankedDishes.map(dish => dish.name_ko);
 
     return NextResponse.json({
-      weather: fallbackWeather,
-      flags,
-      items,
+      menus,
+      flags: flagsArray,
       source: 'fallback',
       error: error?.message
     }, { status: 200 }); // Return 200 even on error since we have fallback data
