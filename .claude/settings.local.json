@@ -22,7 +22,9 @@
       "Bash(node:*)",
       "Bash(npm run check:vocab:*)",
       "Bash(npm run test:vocab:*)",
-      "Bash(tsc --noEmit)"
+      "Bash(tsc --noEmit)",
+      "Bash(lsof:*)",
+      "Bash(curl -s \"http://localhost:3000/api/weather/live?lat=37.5665&lng=126.9780\")"
     ],
     "deny": [],
     "ask": []
