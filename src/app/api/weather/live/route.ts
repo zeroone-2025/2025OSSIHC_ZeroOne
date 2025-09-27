@@ -1,28 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { autumnFallback, flagsFromObs, WeatherObs } from '../_mvp';
+import { getAutumnFallback, type WeatherContext } from '@/lib/reco-core';
 
 const KMA_HOST = 'http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0';
-const MUST_KEYS = ['T1H','REH','WSD','SKY','PTY','PCP','SNO'] as const;
 
-function isMock() {
-  return process.env.MOCK_WEATHER === '1';
+interface KMAResponse {
+  T1H?: number;    // temp C
+  REH?: number;    // humidity %
+  WSD?: number;    // wind m/s
+  SKY?: 1|3|4;     // sky code
+  PTY?: 0|1|2|3|4|5|6|7; // precipitation type
+  PCP?: number;    // mm/h
+  SNO?: number;    // cm/h
 }
 
 function toGrid(lat: number, lng: number) {
-  // Minimal grid approx for Seoul region; your project may already have better impl.
-  // For MVP, just return nx, ny around Seoul (60,127).
+  // Minimal grid approx for Seoul region
   return { nx: 60, ny: 127 };
 }
 
-async function fetchKma(lat: number, lng: number): Promise<WeatherObs | null> {
+function kmaToWeatherContext(kma: KMAResponse): WeatherContext {
+  return {
+    temperature: kma.T1H ?? 18,
+    humidity: kma.REH ?? 55,
+    windSpeed: kma.WSD ?? 3,
+    skyCondition: kma.SKY ?? 3,
+    precipitationType: kma.PTY ?? 0,
+    precipitationAmount: kma.PCP ?? 0,
+    snowAmount: kma.SNO ?? 0
+  };
+}
+
+async function fetchKmaWeather(lat: number, lng: number): Promise<WeatherContext | null> {
   const key = process.env.KMA_API_KEY;
   if (!key) return null;
+
   try {
     const { nx, ny } = toGrid(lat, lng);
-    // Use ultra short-term nowcast (getUltraSrtNcst)
-    const baseDate = new Date(Date.now() - 40 * 60 * 1000); // -40 min
+    const baseDate = new Date(Date.now() - 40 * 60 * 1000);
     const ymd = baseDate.toISOString().slice(0,10).replace(/-/g,'');
     const hh = String(baseDate.getHours()).padStart(2,'0');
+
     const url = new URL(`${KMA_HOST}/getUltraSrtNcst`);
     url.searchParams.set('serviceKey', key);
     url.searchParams.set('pageNo', '1');
@@ -33,30 +50,32 @@ async function fetchKma(lat: number, lng: number): Promise<WeatherObs | null> {
     url.searchParams.set('nx', String(nx));
     url.searchParams.set('ny', String(ny));
 
-    const r = await fetch(url.toString(), { cache: 'no-store' });
-    if (!r.ok) return null;
-    const j = await r.json();
-    const items = j?.response?.body?.items?.item;
+    const response = await fetch(url.toString(), { cache: 'no-store' });
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const items = data?.response?.body?.items?.item;
     if (!Array.isArray(items)) return null;
 
-    const obs: WeatherObs = {};
-    for (const it of items) {
-      switch (it.category) {
-        case 'T1H': obs.T1H = Number(it.obsrValue); break;
-        case 'REH': obs.REH = Number(it.obsrValue); break;
-        case 'WSD': obs.WSD = Number(it.obsrValue); break;
-        case 'SKY': obs.SKY = Number(it.obsrValue); break;
-        case 'PTY': obs.PTY = Number(it.obsrValue); break;
+    const kmaData: KMAResponse = {};
+    for (const item of items) {
+      switch (item.category) {
+        case 'T1H': kmaData.T1H = Number(item.obsrValue); break;
+        case 'REH': kmaData.REH = Number(item.obsrValue); break;
+        case 'WSD': kmaData.WSD = Number(item.obsrValue); break;
+        case 'SKY': kmaData.SKY = Number(item.obsrValue) as 1|3|4; break;
+        case 'PTY': kmaData.PTY = Number(item.obsrValue) as 0|1|2|3|4|5|6|7; break;
         case 'RN1':
         case 'PCP':
-          obs.PCP = String(it.obsrValue) === '강수없음' ? 0 : Number(String(it.obsrValue).replace(/[^0-9.]/g,'')); break;
+          kmaData.PCP = String(item.obsrValue) === '강수없음' ? 0 : Number(String(item.obsrValue).replace(/[^0-9.]/g,'')); break;
         case 'SNO':
-          obs.SNO = String(it.obsrValue) === '적설없음' ? 0 : Number(String(it.obsrValue).replace(/[^0-9.]/g,'')); break;
+          kmaData.SNO = String(item.obsrValue) === '적설없음' ? 0 : Number(String(item.obsrValue).replace(/[^0-9.]/g,'')); break;
       }
     }
-    // If essential keys missing, consider it a failure
-    const hasAny = MUST_KEYS.some(k => (obs as any)[k] != null);
-    return hasAny ? obs : null;
+
+    // Check if we have essential data
+    const hasEssentialData = kmaData.T1H !== undefined || kmaData.REH !== undefined || kmaData.SKY !== undefined;
+    return hasEssentialData ? kmaToWeatherContext(kmaData) : null;
   } catch {
     return null;
   }
@@ -67,21 +86,34 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const lat = Number(searchParams.get('lat'));
     const lng = Number(searchParams.get('lng'));
+
     if (!isFinite(lat) || !isFinite(lng)) {
       return NextResponse.json({ error: 'INVALID_COORDS' }, { status: 400 });
     }
 
-    // Forced mock or real attempt -> fallback
-    let obs: WeatherObs | null = isMock() ? null : await fetchKma(lat, lng);
-    if (!obs) {
-      const fb = autumnFallback();
-      return NextResponse.json({ source: 'fallback', obs: fb.obs, flags: fb.flags });
-    }
+    // Try to fetch real weather data
+    const weather = await fetchKmaWeather(lat, lng);
 
-    const flags = flagsFromObs(obs);
-    return NextResponse.json({ source: 'kma', obs, flags });
-  } catch (e:any) {
-    const fb = autumnFallback();
-    return NextResponse.json({ source: 'fallback', obs: fb.obs, flags: fb.flags, detail: String(e?.message||e) }, { status: 200 });
+    if (weather) {
+      return NextResponse.json({
+        source: 'kma',
+        weather
+      });
+    } else {
+      // Fallback to autumn weather
+      const fallbackWeather = getAutumnFallback();
+      return NextResponse.json({
+        source: 'fallback',
+        weather: fallbackWeather
+      });
+    }
+  } catch (error: any) {
+    // Always return fallback weather even on error
+    const fallbackWeather = getAutumnFallback();
+    return NextResponse.json({
+      source: 'fallback',
+      weather: fallbackWeather,
+      error: error?.message
+    });
   }
 }

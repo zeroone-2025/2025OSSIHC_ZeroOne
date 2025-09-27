@@ -1,39 +1,91 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { rankDishes, deriveFlags, getAutumnFallback, type WeatherContext } from '@/lib/reco-core';
 
-const MENU_RULES: Record<string, string[]> = {
-  cold: ['국밥','라멘','우동','찌개'],
-  rain: ['파전','칼국수','짬뽕'],
-  hot: ['냉면','회덮밥','샐러드'],
-  humid: ['비빔국수','메밀소바'],
-  gloomy: ['부대찌개','전'],
-  gloom: ['부대찌개','전'],
-  dry: ['설렁탕','순대국'],
-  windy: ['돈까스','카레'],
-};
-
-function pickByFlags(flags: string[]): string[] {
-  const bag = new Set<string>();
-  for (const f of flags) (MENU_RULES[f] || []).forEach(m => bag.add(m));
-  if (bag.size === 0) ['국밥','비빔밥','김치찌개'].forEach(m => bag.add(m));
-  return Array.from(bag).slice(0, 3);
+interface WeatherResponse {
+  source: string;
+  weather: WeatherContext;
+  error?: string;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { lat, lng } = await req.json();
+    const { lat, lng, topN = 5 } = await req.json();
+
     if (typeof lat !== 'number' || typeof lng !== 'number') {
       return NextResponse.json({ error: 'INVALID_COORDS' }, { status: 400 });
     }
-    const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8080';
-    const url = new URL('/api/weather/live', base);
-    url.searchParams.set('lat', String(lat));
-    url.searchParams.set('lng', String(lng));
-    const r = await fetch(url.toString(), { cache: 'no-store' });
-    const j = await r.json();
-    const flags: string[] = Array.isArray(j?.flags) ? j.flags : [];
-    const menus = pickByFlags(flags);
-    return NextResponse.json({ flags, menus, source: j?.source ?? 'fallback' });
-  } catch (e:any) {
-    return NextResponse.json({ error: 'SERVER_ERROR', detail: String(e?.message || e) }, { status: 500 });
+
+    // Fetch weather data
+    let weatherData: WeatherContext;
+    let source = 'fallback';
+
+    try {
+      const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8080';
+      const weatherUrl = new URL('/api/weather/live', base);
+      weatherUrl.searchParams.set('lat', String(lat));
+      weatherUrl.searchParams.set('lng', String(lng));
+
+      const weatherResponse = await fetch(weatherUrl.toString(), { cache: 'no-store' });
+
+      if (weatherResponse.ok) {
+        const weatherJson: WeatherResponse = await weatherResponse.json();
+        weatherData = weatherJson.weather;
+        source = weatherJson.source;
+      } else {
+        // Fallback if weather API fails
+        weatherData = getAutumnFallback();
+      }
+    } catch {
+      // Fallback if weather API is unreachable
+      weatherData = getAutumnFallback();
+    }
+
+    // Generate flags and rank dishes
+    const flags = deriveFlags(weatherData);
+    const rankedDishes = rankDishes(weatherData, topN);
+
+    // Format response
+    const items = rankedDishes.map(dish => ({
+      id: dish.id,
+      name: dish.name_ko,
+      name_en: dish.name_en,
+      category: dish.category,
+      score: Math.round(dish.score * 100) / 100, // Round to 2 decimal places
+      tags: dish.tags,
+      price_tier: dish.price_tier,
+      average_price_krw: dish.average_price_krw
+    }));
+
+    return NextResponse.json({
+      weather: weatherData,
+      flags,
+      items,
+      source
+    });
+
+  } catch (error: any) {
+    // Ultimate fallback - always return something
+    const fallbackWeather = getAutumnFallback();
+    const flags = deriveFlags(fallbackWeather);
+    const rankedDishes = rankDishes(fallbackWeather, 5);
+
+    const items = rankedDishes.map(dish => ({
+      id: dish.id,
+      name: dish.name_ko,
+      name_en: dish.name_en,
+      category: dish.category,
+      score: Math.round(dish.score * 100) / 100,
+      tags: dish.tags,
+      price_tier: dish.price_tier,
+      average_price_krw: dish.average_price_krw
+    }));
+
+    return NextResponse.json({
+      weather: fallbackWeather,
+      flags,
+      items,
+      source: 'fallback',
+      error: error?.message
+    }, { status: 200 }); // Return 200 even on error since we have fallback data
   }
 }
