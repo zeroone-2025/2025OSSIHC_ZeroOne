@@ -77,8 +77,9 @@ export async function POST(req: NextRequest) {
         .filter((name: unknown): name is string => typeof name === "string" && name.length > 0)
         .slice(0, 100)
         .map((name) => ({ name, score: scoreMenu(name, fallback) }))
+        .map((menu) => ({ ...menu, score: Number.isFinite(menu.score) ? menu.score : 0 }))
         .sort((a, b) => b.score - a.score)
-        .slice(0, 5);
+        .slice(0, 10);
       return NextResponse.json({ weights: fallback, menus });
     }
 
@@ -91,12 +92,15 @@ export async function POST(req: NextRequest) {
           .filter((name: unknown): name is string => typeof name === "string" && name.length > 0)
       : ["국밥", "비빔밥", "칼국수", "파전", "냉면", "라멘", "우동", "김치찌개", "돈까스"];
 
-    const menus = pool.slice(0, 200)
-      .map((name) => ({ name, score: scoreMenu(name, weights) }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
+    const rawMenus = pool.slice(0, 200)
+      .map((name) => ({ name, score: scoreMenu(name, weights) }));
 
-    return NextResponse.json({ raw, weights, menus });
+    const safeMenus = Array.isArray(rawMenus)
+      ? rawMenus.map((menu) => ({ ...menu, score: Number.isFinite(menu.score) ? menu.score : 0 }))
+      : [];
+    const sortedMenus = safeMenus.sort((a, b) => b.score - a.score).slice(0, 10);
+
+    return NextResponse.json({ raw, weights, menus: sortedMenus });
   } catch (e: any) {
     return NextResponse.json({ error: "SERVER_ERROR", detail: String(e?.message || e) }, { status: 500 });
   }

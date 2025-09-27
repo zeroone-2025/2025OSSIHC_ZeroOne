@@ -74,9 +74,11 @@ export default function RecommendationPage() {
 
         const data: RecoApiRes = await response.json();
         const sortedMenus = Array.isArray(data.menus)
-          ? [...data.menus].sort((a, b) => b.score - a.score)
+          ? [...data.menus]
+              .map((menu) => ({ ...menu, score: Number.isFinite(menu.score) ? menu.score : 0 }))
+              .sort((a, b) => b.score - a.score)
           : [];
-        const limitedMenus = sortedMenus.slice(0, Math.max(3, Math.min(sortedMenus.length, 5)));
+        const limitedMenus = sortedMenus.slice(0, 10);
 
         if (!limitedMenus.length) {
           throw new Error("추천 결과가 비어 있습니다.");
@@ -96,7 +98,7 @@ export default function RecommendationPage() {
 
       if (cancelled) return;
 
-      setMenus(fetchedMenus ?? FALLBACK_MENUS);
+      setMenus((fetchedMenus ?? FALLBACK_MENUS).slice(0, 10));
       setWeights(fetchedWeights ?? {});
       setRaw(fetchedRaw);
       setErrMsg(errorMessage);
