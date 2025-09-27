@@ -6,21 +6,10 @@
     "category": "한식",
     "average_price_krw": 10000,
     "price_tier": 2,
-    "ingredients": [
-      "메밀/밀면",
-      "육수",
-      "계란",
-      "오이"
-    ],
-    "allergens": [
-      "gluten",
-      "egg"
-    ],
-    "tags": [
-      "차가움",
-      "면",
-      "여름"
-    ],
+    "picture": "src/data/jommechu/photo/Naengmyeon.png",
+    "ingredients": ["메밀/밀면", "육수", "계란", "오이"],
+    "allergens": ["gluten", "egg"],
+    "tags": ["차가움", "면", "여름"],
     "weights": {
       "weather": {
         "sunny": 0.8,
@@ -51,28 +40,16 @@
     }
   },
   {
-    "id": "파전/모듬전/빈대떡",
-    "name_ko": "파전/모듬전/빈대떡",
-    "name_en": "Pajeon/Assorted Jeon",
+    "id": "파전",
+    "name_ko": "파전",
+    "name_en": "Pajeon (Scallion Pancake)",
     "category": "한식",
     "average_price_krw": 15000,
     "price_tier": 3,
-    "ingredients": [
-      "밀가루",
-      "파",
-      "해물",
-      "계란"
-    ],
-    "allergens": [
-      "gluten",
-      "egg",
-      "shellfish"
-    ],
-    "tags": [
-      "부침",
-      "비",
-      "안주"
-    ],
+    "picture": "src/data/jommechu/photo/Pajeon.png",
+    "ingredients": ["밀가루", "파", "해물", "계란"],
+    "allergens": ["gluten", "egg", "shellfish"],
+    "tags": ["부침", "비", "안주"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -103,24 +80,16 @@
     }
   },
   {
-    "id": "삼계탕/백숙/찜닭",
-    "name_ko": "삼계탕/백숙/찜닭",
-    "name_en": "Samgyetang/Baeksuk/Jjimdak",
+    "id": "삼계탕",
+    "name_ko": "삼계탕",
+    "name_en": "Samgyetang (Ginseng Chicken Soup)",
     "category": "한식",
     "average_price_krw": 17000,
     "price_tier": 3,
-    "ingredients": [
-      "닭",
-      "인삼",
-      "찹쌀",
-      "대추"
-    ],
+    "picture": "src/data/jommechu/photo/Samgyetang.png",
+    "ingredients": ["닭", "인삼", "찹쌀", "대추"],
     "allergens": [],
-    "tags": [
-      "보양",
-      "국물",
-      "닭"
-    ],
+    "tags": ["보양", "국물", "닭"],
     "weights": {
       "weather": {
         "sunny": 0.75,
@@ -151,27 +120,16 @@
     }
   },
   {
-    "id": "떡볶이/순대/튀김/만두",
-    "name_ko": "떡볶이/순대/튀김/만두",
-    "name_en": "Tteokbokki/Sundae/Fritters/Dumplings",
+    "id": "떡볶이",
+    "name_ko": "떡볶이",
+    "name_en": "Tteokbokki",
     "category": "한식",
     "average_price_krw": 8000,
     "price_tier": 2,
-    "ingredients": [
-      "떡",
-      "어묵",
-      "고추장",
-      "순대"
-    ],
-    "allergens": [
-      "gluten",
-      "fish"
-    ],
-    "tags": [
-      "맵기",
-      "분식",
-      "간식"
-    ],
+    "picture": "src/data/jommechu/photo/Tteokbokki.png",
+    "ingredients": ["떡", "어묵", "고추장", "순대"],
+    "allergens": ["gluten", "fish"],
+    "tags": ["맵기", "분식", "간식"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -208,17 +166,10 @@
     "category": "한식",
     "average_price_krw": 9000,
     "price_tier": 2,
-    "ingredients": [
-      "순대",
-      "돼지부속",
-      "사골육수",
-      "들깨"
-    ],
+    "picture": "src/data/jommechu/photo/Sundaeguk.png",
+    "ingredients": ["순대", "돼지부속", "사골육수", "들깨"],
     "allergens": [],
-    "tags": [
-      "국밥",
-      "따뜻함"
-    ],
+    "tags": ["국밥", "따뜻함"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -255,22 +206,10 @@
     "category": "한식",
     "average_price_krw": 30000,
     "price_tier": 4,
-    "ingredients": [
-      "밥",
-      "국",
-      "다양한반찬",
-      "고기/생선"
-    ],
-    "allergens": [
-      "fish",
-      "shellfish",
-      "gluten",
-      "egg"
-    ],
-    "tags": [
-      "코스",
-      "모임"
-    ],
+    "picture": "src/data/jommechu/photo/Hanjeongsik.png",
+    "ingredients": ["밥", "국", "다양한반찬", "고기/생선"],
+    "allergens": ["fish", "shellfish", "gluten", "egg"],
+    "tags": ["코스", "모임"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -301,27 +240,16 @@
     }
   },
   {
-    "id": "비빔밥/돌솥밥/쌈밥",
-    "name_ko": "비빔밥/돌솥밥/쌈밥",
-    "name_en": "Bibimbap/Dolsotbap/Ssambap",
+    "id": "비빔밥",
+    "name_ko": "비빔밥",
+    "name_en": "Bibimbap",
     "category": "한식",
     "average_price_krw": 9000,
     "price_tier": 2,
-    "ingredients": [
-      "밥",
-      "나물",
-      "고추장",
-      "계란"
-    ],
-    "allergens": [
-      "egg",
-      "gluten"
-    ],
-    "tags": [
-      "밥",
-      "채소",
-      "균형"
-    ],
+    "picture": "src/data/jommechu/photo/Bibimbap.png",
+    "ingredients": ["밥", "나물", "고추장", "계란"],
+    "allergens": ["egg", "gluten"],
+    "tags": ["밥", "채소", "균형"],
     "weights": {
       "weather": {
         "sunny": 0.8,
@@ -352,25 +280,16 @@
     }
   },
   {
-    "id": "설렁탕/곰탕/도가니탕",
-    "name_ko": "설렁탕/곰탕/도가니탕",
-    "name_en": "Seolleongtang/Gomtang/Doganitang",
+    "id": "설렁탕",
+    "name_ko": "설렁탕",
+    "name_en": "Seolleongtang (Ox Bone Soup)",
     "category": "한식",
     "average_price_krw": 11000,
     "price_tier": 2,
-    "ingredients": [
-      "사골",
-      "소고기",
-      "소면",
-      "파"
-    ],
-    "allergens": [
-      "gluten"
-    ],
-    "tags": [
-      "국물",
-      "진한"
-    ],
+    "picture": "src/data/jommechu/photo/Seolleongtang.png",
+    "ingredients": ["사골", "소고기", "소면", "파"],
+    "allergens": ["gluten"],
+    "tags": ["국물", "진한"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -407,17 +326,10 @@
     "category": "한식",
     "average_price_krw": 28000,
     "price_tier": 4,
-    "ingredients": [
-      "돼지등뼈",
-      "감자",
-      "우거지",
-      "들깨"
-    ],
+    "picture": "src/data/jommechu/photo/Gamjatang.png",
+    "ingredients": ["돼지등뼈", "감자", "우거지", "들깨"],
     "allergens": [],
-    "tags": [
-      "매운탕",
-      "모임"
-    ],
+    "tags": ["매운탕", "모임"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -448,23 +360,16 @@
     }
   },
   {
-    "id": "해장국/국밥",
-    "name_ko": "해장국/국밥",
-    "name_en": "Haejangguk/Gukbap",
+    "id": "해장국",
+    "name_ko": "해장국",
+    "name_en": "Haejangguk (Hangover Soup)",
     "category": "한식",
     "average_price_krw": 9000,
     "price_tier": 2,
-    "ingredients": [
-      "소뼈",
-      "선지",
-      "콩나물",
-      "밥"
-    ],
+    "picture": "src/data/jommechu/photo/Haejangguk.png",
+    "ingredients": ["소뼈", "선지", "콩나물", "밥"],
     "allergens": [],
-    "tags": [
-      "해장",
-      "국밥"
-    ],
+    "tags": ["해장", "국밥"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -495,26 +400,16 @@
     }
   },
   {
-    "id": "찌개/전골/국/탕",
-    "name_ko": "찌개/전골/국/탕",
-    "name_en": "Jjigae/Hot Pot/Soups",
+    "id": "찌개",
+    "name_ko": "찌개",
+    "name_en": "Jjigae (Stew)",
     "category": "한식",
     "average_price_krw": 10000,
     "price_tier": 2,
-    "ingredients": [
-      "김치/된장",
-      "두부",
-      "고기/해물"
-    ],
-    "allergens": [
-      "soy",
-      "fish",
-      "shellfish"
-    ],
-    "tags": [
-      "따뜻함",
-      "국물"
-    ],
+    "picture": "src/data/jommechu/photo/Jjigae.png",
+    "ingredients": ["김치/된장", "두부", "고기/해물"],
+    "allergens": ["soy", "fish", "shellfish"],
+    "tags": ["따뜻함", "국물"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -551,20 +446,10 @@
     "category": "한식",
     "average_price_krw": 9000,
     "price_tier": 2,
-    "ingredients": [
-      "밀가루면",
-      "해물/닭",
-      "육수",
-      "야채"
-    ],
-    "allergens": [
-      "gluten",
-      "shellfish"
-    ],
-    "tags": [
-      "면",
-      "국물"
-    ],
+    "picture": "src/data/jommechu/photo/Kalguksu.png",
+    "ingredients": ["밀가루면", "해물/닭", "육수", "야채"],
+    "allergens": ["gluten", "shellfish"],
+    "tags": ["면", "국물"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -601,21 +486,10 @@
     "category": "한식",
     "average_price_krw": 4000,
     "price_tier": 1,
-    "ingredients": [
-      "김",
-      "밥",
-      "단무지",
-      "계란"
-    ],
-    "allergens": [
-      "egg",
-      "fish",
-      "sesame"
-    ],
-    "tags": [
-      "간편",
-      "포장"
-    ],
+    "picture": "src/data/jommechu/photo/Gimbap.png",
+    "ingredients": ["김", "밥", "단무지", "계란"],
+    "allergens": ["egg", "fish", "sesame"],
+    "tags": ["간편", "포장"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -652,21 +526,10 @@
     "category": "한식",
     "average_price_krw": 4000,
     "price_tier": 1,
-    "ingredients": [
-      "면",
-      "스프",
-      "계란",
-      "파"
-    ],
-    "allergens": [
-      "gluten",
-      "egg"
-    ],
-    "tags": [
-      "면",
-      "간편",
-      "매운"
-    ],
+    "picture": "src/data/jommechu/photo/Ramyeon.png",
+    "ingredients": ["면", "스프", "계란", "파"],
+    "allergens": ["gluten", "egg"],
+    "tags": ["면", "간편", "매운"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -703,20 +566,10 @@
     "category": "한식",
     "average_price_krw": 7000,
     "price_tier": 1,
-    "ingredients": [
-      "만두피",
-      "돼지고기",
-      "부추",
-      "두부"
-    ],
-    "allergens": [
-      "gluten",
-      "soy"
-    ],
-    "tags": [
-      "간식",
-      "찐/군"
-    ],
+    "picture": "src/data/jommechu/photo/Mandu.png",
+    "ingredients": ["만두피", "돼지고기", "부추", "두부"],
+    "allergens": ["gluten", "soy"],
+    "tags": ["간식", "찐/군"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -753,19 +606,10 @@
     "category": "한식",
     "average_price_krw": 9000,
     "price_tier": 2,
-    "ingredients": [
-      "연두부",
-      "해물/돼지고기",
-      "고추기름"
-    ],
-    "allergens": [
-      "soy",
-      "shellfish"
-    ],
-    "tags": [
-      "맵기선택",
-      "국물"
-    ],
+    "picture": "src/data/jommechu/photo/Sundubu.png",
+    "ingredients": ["연두부", "해물/돼지고기", "고추기름"],
+    "allergens": ["soy", "shellfish"],
+    "tags": ["맵기선택", "국물"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -802,16 +646,10 @@
     "category": "한식",
     "average_price_krw": 9000,
     "price_tier": 2,
-    "ingredients": [
-      "쌀",
-      "육수/물",
-      "버섯/야채"
-    ],
+    "picture": "src/data/jommechu/photo/Juk.png",
+    "ingredients": ["쌀", "육수/물", "버섯/야채"],
     "allergens": [],
-    "tags": [
-      "부드러움",
-      "소화"
-    ],
+    "tags": ["부드러움", "소화"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -844,22 +682,14 @@
   {
     "id": "낙지",
     "name_ko": "낙지",
-    "name_en": "Nakji (Octopus Dishes)",
+    "name_en": "Nakji (Octopus)",
     "category": "한식",
     "average_price_krw": 18000,
     "price_tier": 3,
-    "ingredients": [
-      "낙지",
-      "고추장/양념",
-      "야채"
-    ],
-    "allergens": [
-      "shellfish"
-    ],
-    "tags": [
-      "매콤",
-      "해산물"
-    ],
+    "picture": "src/data/jommechu/photo/Nakji.png",
+    "ingredients": ["낙지", "양념", "야채"],
+    "allergens": ["shellfish"],
+    "tags": ["매콤", "해산물"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -890,24 +720,16 @@
     }
   },
   {
-    "id": "장어구이/꼼장어",
-    "name_ko": "장어구이/꼼장어",
-    "name_en": "Eel Roast/Sea Eel",
+    "id": "장어구이",
+    "name_ko": "장어구이",
+    "name_en": "Eel Roast",
     "category": "한식",
     "average_price_krw": 35000,
     "price_tier": 5,
-    "ingredients": [
-      "장어",
-      "양념",
-      "마늘"
-    ],
-    "allergens": [
-      "fish"
-    ],
-    "tags": [
-      "보양",
-      "구이"
-    ],
+    "picture": "src/data/jommechu/photo/Eel Roast.png",
+    "ingredients": ["장어", "양념"],
+    "allergens": ["fish"],
+    "tags": ["보양", "구이"],
     "weights": {
       "weather": {
         "sunny": 0.75,
@@ -938,72 +760,16 @@
     }
   },
   {
-    "id": "전라도음식",
-    "name_ko": "전라도음식",
-    "name_en": "Jeolla-style Dishes",
-    "category": "한식",
-    "average_price_krw": 20000,
-    "price_tier": 4,
-    "ingredients": [
-      "탕/한정식 등",
-      "젓갈"
-    ],
-    "allergens": [
-      "fish",
-      "shellfish"
-    ],
-    "tags": [
-      "지역",
-      "풍성"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.5,
-        "snowy": 0.5,
-        "temperature": 0.52,
-        "humidity": 0.51,
-        "wind": 0.48
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.5,
-        "autumn": 0.9,
-        "winter": 0.5
-      },
-      "day": {
-        "weekday": 0.5,
-        "weekend": 0.5
-      },
-      "mood": {
-        "happy": 0.5,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
     "id": "전복",
     "name_ko": "전복",
-    "name_en": "Abalone Dishes",
+    "name_en": "Abalone",
     "category": "한식",
     "average_price_krw": 35000,
     "price_tier": 5,
-    "ingredients": [
-      "전복",
-      "버터/간장",
-      "야채"
-    ],
-    "allergens": [
-      "shellfish"
-    ],
-    "tags": [
-      "해산물",
-      "특별"
-    ],
+    "picture": "src/data/jommechu/photo/Abalone.png",
+    "ingredients": ["전복", "버터/간장", "야채"],
+    "allergens": ["shellfish"],
+    "tags": ["해산물", "특별"],
     "weights": {
       "weather": {
         "sunny": 0.75,
@@ -1040,18 +806,10 @@
     "category": "한식",
     "average_price_krw": 25000,
     "price_tier": 4,
-    "ingredients": [
-      "홍어",
-      "김치",
-      "삼합"
-    ],
-    "allergens": [
-      "fish"
-    ],
-    "tags": [
-      "향강함",
-      "모험"
-    ],
+    "picture": "src/data/jommechu/photo/Fermented Skate.png",
+    "ingredients": ["홍어", "김치", "삼합"],
+    "allergens": ["fish"],
+    "tags": ["향강함", "모험"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1082,23 +840,16 @@
     }
   },
   {
-    "id": "삼겹살/목살",
-    "name_ko": "삼겹살/목살",
-    "name_en": "Pork Belly/Neck BBQ",
+    "id": "삼겹살",
+    "name_ko": "삼겹살",
+    "name_en": "Samgyeopsal (Pork Belly)",
     "category": "고기/구이류",
     "average_price_krw": 16000,
     "price_tier": 3,
-    "ingredients": [
-      "돼지고기",
-      "마늘",
-      "상추",
-      "쌈장"
-    ],
+    "picture": "src/data/jommechu/photo/Samgyeopsal.png",
+    "ingredients": ["돼지고기", "마늘", "상추", "쌈장"],
     "allergens": [],
-    "tags": [
-      "구이",
-      "회식"
-    ],
+    "tags": ["구이", "회식"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1129,23 +880,16 @@
     }
   },
   {
-    "id": "돼지갈비/갈매기살",
-    "name_ko": "돼지갈비/갈매기살",
-    "name_en": "Marinated Pork Ribs/Skirt",
+    "id": "돼지갈비",
+    "name_ko": "돼지갈비",
+    "name_en": "Dwaeji-galbi (Marinated Pork Ribs)",
     "category": "고기/구이류",
     "average_price_krw": 17000,
     "price_tier": 3,
-    "ingredients": [
-      "돼지갈비",
-      "간장양념",
-      "마늘",
-      "양파"
-    ],
+    "picture": "src/data/jommechu/photo/Dwaeji-galbi.png",
+    "ingredients": ["돼지갈비", "간장양념", "마늘", "양파"],
     "allergens": [],
-    "tags": [
-      "구이",
-      "단짠"
-    ],
+    "tags": ["구이", "단짠"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1176,23 +920,16 @@
     }
   },
   {
-    "id": "불고기/갈비살/차돌박이",
-    "name_ko": "불고기/갈비살/차돌박이",
-    "name_en": "Bulgogi/Beef Cuts",
+    "id": "불고기",
+    "name_ko": "불고기",
+    "name_en": "Bulgogi",
     "category": "고기/구이류",
     "average_price_krw": 20000,
     "price_tier": 4,
-    "ingredients": [
-      "소고기",
-      "간장",
-      "설탕",
-      "파"
-    ],
+    "picture": "src/data/jommechu/photo/Bulgogi.png",
+    "ingredients": ["소고기", "간장", "설탕", "파"],
     "allergens": [],
-    "tags": [
-      "구이",
-      "한식고기"
-    ],
+    "tags": ["구이", "한식고기"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1223,24 +960,16 @@
     }
   },
   {
-    "id": "꽃등심/등심/육회",
-    "name_ko": "꽃등심/등심/육회",
-    "name_en": "Prime Ribeye/Beef Tartare",
+    "id": "꽃등심",
+    "name_ko": "꽃등심",
+    "name_en": "Prime Ribeye",
     "category": "고기/구이류",
     "average_price_krw": 25000,
     "price_tier": 4,
-    "ingredients": [
-      "소고기",
-      "참기름",
-      "배"
-    ],
-    "allergens": [
-      "sesame"
-    ],
-    "tags": [
-      "고급",
-      "회식"
-    ],
+    "picture": "src/data/jommechu/photo/Prime Ribeye.png",
+    "ingredients": ["소고기", "참기름", "배"],
+    "allergens": ["sesame"],
+    "tags": ["고급", "회식"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1271,22 +1000,16 @@
     }
   },
   {
-    "id": "오리훈제/구이/로스/탕",
-    "name_ko": "오리훈제/구이/로스/탕",
+    "id": "오리훈제",
+    "name_ko": "오리훈제",
     "name_en": "Duck Dishes",
     "category": "고기/구이류",
     "average_price_krw": 18000,
     "price_tier": 3,
-    "ingredients": [
-      "오리고기",
-      "야채",
-      "양념"
-    ],
+    "picture": "src/data/jommechu/photo/Duck Dishes.png",
+    "ingredients": ["오리고기", "야채", "양념"],
     "allergens": [],
-    "tags": [
-      "구이",
-      "훈제"
-    ],
+    "tags": ["구이", "훈제"],
     "weights": {
       "weather": {
         "sunny": 0.75,
@@ -1323,17 +1046,10 @@
     "category": "고기/구이류",
     "average_price_krw": 14000,
     "price_tier": 3,
-    "ingredients": [
-      "닭",
-      "고추장",
-      "양배추",
-      "깻잎"
-    ],
+    "picture": "src/data/jommechu/photo/Dakgalbi.png",
+    "ingredients": ["닭", "고추장", "양배추", "깻잎"],
     "allergens": [],
-    "tags": [
-      "매콤",
-      "볶음"
-    ],
+    "tags": ["매콤", "볶음"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1364,23 +1080,16 @@
     }
   },
   {
-    "id": "곱창/양/대창/막창",
-    "name_ko": "곱창/양/대창/막창",
-    "name_en": "Gopchang/Offal BBQ",
+    "id": "곱창",
+    "name_ko": "곱창",
+    "name_en": "Gopchang (Grilled Intestines)",
     "category": "고기/구이류",
     "average_price_krw": 18000,
     "price_tier": 3,
-    "ingredients": [
-      "소/돼지내장",
-      "양파",
-      "부추",
-      "소스"
-    ],
+    "picture": "src/data/jommechu/photo/Gopchang.png",
+    "ingredients": ["내장", "양파", "부추", "소스"],
     "allergens": [],
-    "tags": [
-      "구이",
-      "기름진"
-    ],
+    "tags": ["구이", "기름진"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1411,24 +1120,16 @@
     }
   },
   {
-    "id": "족발/보쌈",
-    "name_ko": "족발/보쌈",
-    "name_en": "Jokbal/Bossam",
+    "id": "족발",
+    "name_ko": "족발",
+    "name_en": "Jokbal",
     "category": "고기/구이류",
     "average_price_krw": 35000,
     "price_tier": 5,
-    "ingredients": [
-      "돼지족/수육",
-      "새우젓",
-      "김치"
-    ],
-    "allergens": [
-      "shellfish"
-    ],
-    "tags": [
-      "모임",
-      "보쌈"
-    ],
+    "picture": "src/data/jommechu/photo/Jokbal.png",
+    "ingredients": ["돼지족/수육", "새우젓", "김치"],
+    "allergens": ["shellfish"],
+    "tags": ["모임", "보쌈"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1459,26 +1160,16 @@
     }
   },
   {
-    "id": "중국음식 (짜장면)",
-    "name_ko": "중국음식 (짜장면)",
-    "name_en": "Chinese (Jajangmyeon)",
+    "id": "짜장면",
+    "name_ko": "짜장면",
+    "name_en": "Jajangmyeon",
     "category": "일식/중식/세계음식",
     "average_price_krw": 8000,
     "price_tier": 2,
-    "ingredients": [
-      "면",
-      "춘장",
-      "돼지고기",
-      "양파"
-    ],
-    "allergens": [
-      "gluten",
-      "soy"
-    ],
-    "tags": [
-      "면",
-      "배달"
-    ],
+    "picture": "src/data/jommechu/photo/Jajangmyeon.png",
+    "ingredients": ["면", "춘장", "돼지고기", "양파"],
+    "allergens": ["gluten", "soy"],
+    "tags": ["면", "배달"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1515,18 +1206,10 @@
     "category": "일식/중식/세계음식",
     "average_price_krw": 14000,
     "price_tier": 3,
-    "ingredients": [
-      "만두피",
-      "새우/돼지고기"
-    ],
-    "allergens": [
-      "gluten",
-      "shellfish"
-    ],
-    "tags": [
-      "점심",
-      "공유"
-    ],
+    "picture": "src/data/jommechu/photo/Dim Sum.png",
+    "ingredients": ["만두피", "새우/돼지고기"],
+    "allergens": ["gluten", "shellfish"],
+    "tags": ["점심", "공유"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1557,25 +1240,16 @@
     }
   },
   {
-    "id": "회/초밥",
-    "name_ko": "회/초밥",
-    "name_en": "Sashimi/Sushi",
+    "id": "회",
+    "name_ko": "회",
+    "name_en": "Sashimi",
     "category": "일식/중식/세계음식",
     "average_price_krw": 35000,
     "price_tier": 5,
-    "ingredients": [
-      "생선",
-      "밥",
-      "간장",
-      "와사비"
-    ],
-    "allergens": [
-      "fish"
-    ],
-    "tags": [
-      "생식",
-      "담백"
-    ],
+    "picture": "src/data/jommechu/photo/Sashimi.png",
+    "ingredients": ["생선", "밥", "간장", "와사비"],
+    "allergens": ["fish"],
+    "tags": ["생식", "담백"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1612,17 +1286,10 @@
     "category": "일식/중식/세계음식",
     "average_price_krw": 11000,
     "price_tier": 2,
-    "ingredients": [
-      "쌀면",
-      "소고기/닭",
-      "숙주",
-      "허브"
-    ],
+    "picture": "src/data/jommechu/photo/Pho.png",
+    "ingredients": ["쌀면", "소고기/닭", "숙주", "허브"],
     "allergens": [],
-    "tags": [
-      "국물",
-      "가벼움"
-    ],
+    "tags": ["국물", "가벼움"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1659,19 +1326,10 @@
     "category": "일식/중식/세계음식",
     "average_price_krw": 9000,
     "price_tier": 2,
-    "ingredients": [
-      "카레루",
-      "감자",
-      "당근",
-      "고기"
-    ],
-    "allergens": [
-      "gluten"
-    ],
-    "tags": [
-      "밥",
-      "부드러움"
-    ],
+    "picture": "src/data/jommechu/photo/Curry.png",
+    "ingredients": ["카레루", "감자", "당근", "고기"],
+    "allergens": ["gluten"],
+    "tags": ["밥", "부드러움"],
     "weights": {
       "weather": {
         "sunny": 0.75,
@@ -1708,17 +1366,10 @@
     "category": "일식/중식/세계음식",
     "average_price_krw": 18000,
     "price_tier": 3,
-    "ingredients": [
-      "소고기",
-      "채소",
-      "육수",
-      "소스"
-    ],
+    "picture": "src/data/jommechu/photo/Shabu-shabu.png",
+    "ingredients": ["소고기", "채소", "육수", "소스"],
     "allergens": [],
-    "tags": [
-      "가벼움",
-      "채소"
-    ],
+    "tags": ["가벼움", "채소"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1755,20 +1406,10 @@
     "category": "일식/중식/세계음식",
     "average_price_krw": 25000,
     "price_tier": 4,
-    "ingredients": [
-      "꼬치",
-      "사시미",
-      "튀김"
-    ],
-    "allergens": [
-      "fish",
-      "shellfish",
-      "gluten"
-    ],
-    "tags": [
-      "안주",
-      "모임"
-    ],
+    "picture": "src/data/jommechu/photo/Izakaya.png",
+    "ingredients": ["꼬치", "사시미", "튀김"],
+    "allergens": ["fish", "shellfish", "gluten"],
+    "tags": ["안주", "모임"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1805,20 +1446,10 @@
     "category": "일식/중식/세계음식",
     "average_price_krw": 15000,
     "price_tier": 3,
-    "ingredients": [
-      "팟타이",
-      "똠얌",
-      "그린커리"
-    ],
-    "allergens": [
-      "shellfish",
-      "peanut",
-      "gluten"
-    ],
-    "tags": [
-      "이국",
-      "매콤"
-    ],
+    "picture": "src/data/jommechu/photo/Thai Food.png",
+    "ingredients": ["팟타이", "똠얌", "그린커리"],
+    "allergens": ["shellfish", "peanut", "gluten"],
+    "tags": ["이국", "매콤"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -1833,430 +1464,6 @@
         "spring": 0.5,
         "summer": 0.5,
         "autumn": 0.8,
-        "winter": 0.5
-      },
-      "day": {
-        "weekday": 0.5,
-        "weekend": 0.5
-      },
-      "mood": {
-        "happy": 0.5,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
-    "id": "동남아음식",
-    "name_ko": "동남아음식",
-    "name_en": "Southeast Asian",
-    "category": "일식/중식/세계음식",
-    "average_price_krw": 15000,
-    "price_tier": 3,
-    "ingredients": [
-      "포",
-      "반미",
-      "분짜"
-    ],
-    "allergens": [],
-    "tags": [
-      "이국",
-      "허브"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.5,
-        "snowy": 0.85,
-        "temperature": 0.47,
-        "humidity": 0.51,
-        "wind": 0.66
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.5,
-        "autumn": 0.8,
-        "winter": 0.8
-      },
-      "day": {
-        "weekday": 0.6,
-        "weekend": 0.9
-      },
-      "mood": {
-        "happy": 0.5,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
-    "id": "남미음식",
-    "name_ko": "남미음식",
-    "name_en": "Latin American",
-    "category": "일식/중식/세계음식",
-    "average_price_krw": 20000,
-    "price_tier": 4,
-    "ingredients": [
-      "타코/अ사도"
-    ],
-    "allergens": [
-      "gluten"
-    ],
-    "tags": [
-      "이국",
-      "구이"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.4,
-        "snowy": 0.3,
-        "temperature": 0.52,
-        "humidity": 0.45,
-        "wind": 0.35
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.5,
-        "autumn": 0.5,
-        "winter": 0.5
-      },
-      "day": {
-        "weekday": 0.9,
-        "weekend": 0.6
-      },
-      "mood": {
-        "happy": 0.5,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
-    "id": "이슬람음식",
-    "name_ko": "이슬람음식",
-    "name_en": "Halal/Middle Eastern",
-    "category": "일식/중식/세계음식",
-    "average_price_krw": 15000,
-    "price_tier": 3,
-    "ingredients": [
-      "케밥",
-      "후무스",
-      "양고기"
-    ],
-    "allergens": [
-      "sesame",
-      "gluten"
-    ],
-    "tags": [
-      "할랄",
-      "이국"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.45,
-        "snowy": 0.9,
-        "temperature": 0.52,
-        "humidity": 0.48,
-        "wind": 0.67
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.5,
-        "autumn": 0.8,
-        "winter": 0.5
-      },
-      "day": {
-        "weekday": 0.5,
-        "weekend": 0.5
-      },
-      "mood": {
-        "happy": 0.5,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
-    "id": "지중해음식",
-    "name_ko": "지중해음식",
-    "name_en": "Mediterranean",
-    "category": "일식/중식/세계음식",
-    "average_price_krw": 25000,
-    "price_tier": 4,
-    "ingredients": [
-      "파스타/샐러드",
-      "올리브"
-    ],
-    "allergens": [
-      "gluten"
-    ],
-    "tags": [
-      "지중해식",
-      "샐러드"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.2,
-        "snowy": 0.85,
-        "temperature": 0.52,
-        "humidity": 0.33,
-        "wind": 0.57
-      },
-      "season": {
-        "spring": 0.9,
-        "summer": 0.5,
-        "autumn": 0.5,
-        "winter": 0.5
-      },
-      "day": {
-        "weekday": 0.5,
-        "weekend": 0.5
-      },
-      "mood": {
-        "happy": 0.5,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
-    "id": "씨푸드",
-    "name_ko": "씨푸드",
-    "name_en": "Seafood Restaurant",
-    "category": "일식/중식/세계음식",
-    "average_price_krw": 30000,
-    "price_tier": 4,
-    "ingredients": [
-      "각종해산물"
-    ],
-    "allergens": [
-      "fish",
-      "shellfish"
-    ],
-    "tags": [
-      "해산물",
-      "특별"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.5,
-        "snowy": 0.5,
-        "temperature": 0.47,
-        "humidity": 0.51,
-        "wind": 0.48
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.5,
-        "autumn": 0.5,
-        "winter": 0.8
-      },
-      "day": {
-        "weekday": 0.6,
-        "weekend": 0.9
-      },
-      "mood": {
-        "happy": 0.5,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
-    "id": "유로피언레스토랑",
-    "name_ko": "유로피언레스토랑",
-    "name_en": "European Restaurant",
-    "category": "양식/레스토랑",
-    "average_price_krw": 28000,
-    "price_tier": 4,
-    "ingredients": [
-      "파스타/그릴"
-    ],
-    "allergens": [
-      "gluten",
-      "dairy"
-    ],
-    "tags": [
-      "레스토랑"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.5,
-        "snowy": 0.5,
-        "temperature": 0.52,
-        "humidity": 0.51,
-        "wind": 0.48
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.5,
-        "autumn": 0.5,
-        "winter": 0.5
-      },
-      "day": {
-        "weekday": 0.5,
-        "weekend": 0.5
-      },
-      "mood": {
-        "happy": 0.5,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
-    "id": "프렌치레스토랑",
-    "name_ko": "프렌치레스토랑",
-    "name_en": "French Restaurant",
-    "category": "양식/레스토랑",
-    "average_price_krw": 40000,
-    "price_tier": 5,
-    "ingredients": [
-      "스테이크",
-      "소스"
-    ],
-    "allergens": [
-      "dairy",
-      "gluten"
-    ],
-    "tags": [
-      "고급",
-      "코스"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.5,
-        "snowy": 0.85,
-        "temperature": 0.52,
-        "humidity": 0.51,
-        "wind": 0.66
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.5,
-        "autumn": 0.5,
-        "winter": 0.5
-      },
-      "day": {
-        "weekday": 0.5,
-        "weekend": 0.5
-      },
-      "mood": {
-        "happy": 0.5,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
-    "id": "이태리레스토랑",
-    "name_ko": "이태리레스토랑",
-    "name_en": "Italian Restaurant (Pasta)",
-    "category": "양식/레스토랑",
-    "average_price_krw": 18000,
-    "price_tier": 3,
-    "ingredients": [
-      "파스타",
-      "피자",
-      "리조또"
-    ],
-    "allergens": [
-      "gluten",
-      "dairy"
-    ],
-    "tags": [
-      "파스타",
-      "레스토랑"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.5,
-        "snowy": 0.9,
-        "temperature": 0.52,
-        "humidity": 0.51,
-        "wind": 0.68
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.5,
-        "autumn": 0.5,
-        "winter": 0.5
-      },
-      "day": {
-        "weekday": 0.5,
-        "weekend": 0.5
-      },
-      "mood": {
-        "happy": 0.5,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
-    "id": "퓨전레스토랑",
-    "name_ko": "퓨전레스토랑",
-    "name_en": "Fusion Restaurant",
-    "category": "양식/레스토랑",
-    "average_price_krw": 22000,
-    "price_tier": 4,
-    "ingredients": [
-      "퓨전메뉴"
-    ],
-    "allergens": [
-      "gluten",
-      "dairy"
-    ],
-    "tags": [
-      "트렌디"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.5,
-        "snowy": 0.3,
-        "temperature": 0.52,
-        "humidity": 0.51,
-        "wind": 0.38
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.5,
-        "autumn": 0.5,
         "winter": 0.5
       },
       "day": {
@@ -2279,18 +1486,10 @@
     "category": "양식/레스토랑",
     "average_price_krw": 9000,
     "price_tier": 2,
-    "ingredients": [
-      "빵",
-      "소고기패티",
-      "치즈"
-    ],
-    "allergens": [
-      "gluten",
-      "dairy"
-    ],
-    "tags": [
-      "패스트푸드"
-    ],
+    "picture": "src/data/jommechu/photo/Hamburger.png",
+    "ingredients": ["빵", "소고기패티", "치즈"],
+    "allergens": ["gluten", "dairy"],
+    "tags": ["패스트푸드"],
     "weights": {
       "weather": {
         "sunny": 0.8,
@@ -2327,19 +1526,10 @@
     "category": "양식/레스토랑",
     "average_price_krw": 25000,
     "price_tier": 4,
-    "ingredients": [
-      "도우",
-      "토마토소스",
-      "치즈"
-    ],
-    "allergens": [
-      "gluten",
-      "dairy"
-    ],
-    "tags": [
-      "공유",
-      "모임"
-    ],
+    "picture": "src/data/jommechu/photo/Pizza.png",
+    "ingredients": ["도우", "토마토소스", "치즈"],
+    "allergens": ["gluten", "dairy"],
+    "tags": ["공유", "모임"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -2376,19 +1566,10 @@
     "category": "양식/레스토랑",
     "average_price_krw": 10000,
     "price_tier": 2,
-    "ingredients": [
-      "돼지고기",
-      "빵가루",
-      "소스"
-    ],
-    "allergens": [
-      "gluten",
-      "egg"
-    ],
-    "tags": [
-      "바삭",
-      "점심"
-    ],
+    "picture": "src/data/jommechu/photo/Pork Cutlet.png",
+    "ingredients": ["돼지고기", "빵가루", "소스"],
+    "allergens": ["gluten", "egg"],
+    "tags": ["바삭", "점심"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -2425,15 +1606,10 @@
     "category": "양식/레스토랑",
     "average_price_krw": 50000,
     "price_tier": 5,
-    "ingredients": [
-      "스테이크",
-      "감자"
-    ],
+    "picture": "src/data/jommechu/photo/Steakhouse.png",
+    "ingredients": ["스테이크", "감자"],
     "allergens": [],
-    "tags": [
-      "고급",
-      "회식"
-    ],
+    "tags": ["고급", "회식"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -2470,19 +1646,10 @@
     "category": "양식/레스토랑",
     "average_price_krw": 25000,
     "price_tier": 4,
-    "ingredients": [
-      "스테이크",
-      "파스타",
-      "샐러드바"
-    ],
-    "allergens": [
-      "gluten",
-      "dairy"
-    ],
-    "tags": [
-      "가족",
-      "모임"
-    ],
+    "picture": "src/data/jommechu/photo/Family Restaurant.png",
+    "ingredients": ["스테이크", "파스타", "샐러드바"],
+    "allergens": ["gluten", "dairy"],
+    "tags": ["가족", "모임"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -2519,14 +1686,10 @@
     "category": "양식/레스토랑",
     "average_price_krw": 45000,
     "price_tier": 5,
-    "ingredients": [
-      "다양"
-    ],
+    "picture": "src/data/jommechu/photo/Buffet.png",
+    "ingredients": ["다양"],
     "allergens": [],
-    "tags": [
-      "모임",
-      "다양"
-    ],
+    "tags": ["모임", "다양"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -2557,70 +1720,16 @@
     }
   },
   {
-    "id": "패스트푸드",
-    "name_ko": "패스트푸드",
-    "name_en": "Fast Food (K-Franchise)",
-    "category": "양식/레스토랑",
-    "average_price_krw": 8000,
-    "price_tier": 2,
-    "ingredients": [
-      "버거/치킨/감자"
-    ],
-    "allergens": [
-      "gluten"
-    ],
-    "tags": [
-      "저가",
-      "빠름"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.5,
-        "snowy": 0.5,
-        "temperature": 0.52,
-        "humidity": 0.51,
-        "wind": 0.48
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.5,
-        "autumn": 0.5,
-        "winter": 0.5
-      },
-      "day": {
-        "weekday": 0.5,
-        "weekend": 0.5
-      },
-      "mood": {
-        "happy": 0.5,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
     "id": "아이스크림",
     "name_ko": "아이스크림",
     "name_en": "Ice Cream",
     "category": "카페/디저트",
     "average_price_krw": 5000,
     "price_tier": 1,
-    "ingredients": [
-      "우유",
-      "설탕",
-      "과일"
-    ],
-    "allergens": [
-      "dairy"
-    ],
-    "tags": [
-      "차가움",
-      "디저트"
-    ],
+    "picture": "src/data/jommechu/photo/Ice Cream.png",
+    "ingredients": ["우유", "설탕", "과일"],
+    "allergens": ["dairy"],
+    "tags": ["차가움", "디저트"],
     "weights": {
       "weather": {
         "sunny": 0.8,
@@ -2657,19 +1766,10 @@
     "category": "카페/디저트",
     "average_price_krw": 3000,
     "price_tier": 1,
-    "ingredients": [
-      "밀가루",
-      "설탕",
-      "기름"
-    ],
-    "allergens": [
-      "gluten",
-      "egg"
-    ],
-    "tags": [
-      "달콤",
-      "간식"
-    ],
+    "picture": "src/data/jommechu/photo/Donuts.png",
+    "ingredients": ["밀가루", "설탕", "기름"],
+    "allergens": ["gluten", "egg"],
+    "tags": ["달콤", "간식"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -2700,26 +1800,16 @@
     }
   },
   {
-    "id": "베이커리/빵",
-    "name_ko": "베이커리/빵",
-    "name_en": "Bakery/Bread",
+    "id": "베이커리",
+    "name_ko": "베이커리",
+    "name_en": "Bakery",
     "category": "카페/디저트",
     "average_price_krw": 7000,
     "price_tier": 1,
-    "ingredients": [
-      "밀가루",
-      "버터",
-      "계란"
-    ],
-    "allergens": [
-      "gluten",
-      "egg",
-      "dairy"
-    ],
-    "tags": [
-      "빵",
-      "간단"
-    ],
+    "picture": "src/data/jommechu/photo/Bakery.png",
+    "ingredients": ["밀가루", "버터", "계란"],
+    "allergens": ["gluten", "egg", "dairy"],
+    "tags": ["빵", "간단"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -2750,24 +1840,16 @@
     }
   },
   {
-    "id": "카페/커피숍",
-    "name_ko": "카페/커피숍",
-    "name_en": "Cafe/Coffee Shop",
+    "id": "카페",
+    "name_ko": "카페",
+    "name_en": "Cafe",
     "category": "카페/디저트",
     "average_price_krw": 6000,
     "price_tier": 1,
-    "ingredients": [
-      "커피",
-      "우유",
-      "시럽"
-    ],
-    "allergens": [
-      "dairy"
-    ],
-    "tags": [
-      "카페",
-      "휴식"
-    ],
+    "picture": "src/data/jommechu/photo/Cafe.png",
+    "ingredients": ["커피", "우유", "시럽"],
+    "allergens": ["dairy"],
+    "tags": ["카페", "휴식"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -2798,123 +1880,16 @@
     }
   },
   {
-    "id": "브런치",
-    "name_ko": "브런치",
-    "name_en": "Brunch Plate",
-    "category": "카페/디저트",
-    "average_price_krw": 16000,
-    "price_tier": 3,
-    "ingredients": [
-      "빵",
-      "계란",
-      "소시지",
-      "샐러드"
-    ],
-    "allergens": [
-      "gluten",
-      "egg"
-    ],
-    "tags": [
-      "주말",
-      "여유"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.8,
-        "cloudy": 0.55,
-        "rainy": 0.5,
-        "snowy": 0.5,
-        "temperature": 0.83,
-        "humidity": 0.59,
-        "wind": 0.44
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.9,
-        "autumn": 0.8,
-        "winter": 0.5
-      },
-      "day": {
-        "weekday": 0.5,
-        "weekend": 0.5
-      },
-      "mood": {
-        "happy": 0.5,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
-    "id": "소주",
-    "name_ko": "소주",
-    "name_en": "Soju",
-    "category": "나이트라이프",
-    "average_price_krw": 5000,
-    "price_tier": 1,
-    "ingredients": [
-      "주정",
-      "물",
-      "감미료"
-    ],
-    "allergens": [
-      "alcohol"
-    ],
-    "tags": [
-      "주류",
-      "회식"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.5,
-        "snowy": 0.5,
-        "temperature": 0.52,
-        "humidity": 0.51,
-        "wind": 0.48
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.5,
-        "autumn": 0.5,
-        "winter": 0.5
-      },
-      "day": {
-        "weekday": 0.9,
-        "weekend": 0.6
-      },
-      "mood": {
-        "happy": 0.5,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
-    "id": "맥주/호프",
-    "name_ko": "맥주/호프",
+    "id": "맥주",
+    "name_ko": "맥주",
     "name_en": "Beer",
     "category": "나이트라이프",
     "average_price_krw": 6000,
     "price_tier": 1,
-    "ingredients": [
-      "맥아",
-      "홉",
-      "효모"
-    ],
-    "allergens": [
-      "alcohol",
-      "gluten"
-    ],
-    "tags": [
-      "주류",
-      "가벼움"
-    ],
+    "picture": "src/data/jommechu/photo/Beer.png",
+    "ingredients": ["맥아", "홉", "효모"],
+    "allergens": ["alcohol", "gluten"],
+    "tags": ["주류", "가벼움"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -2945,24 +1920,16 @@
     }
   },
   {
-    "id": "막걸리/동동주",
-    "name_ko": "막걸리/동동주",
-    "name_en": "Makgeolli/Dongdongju",
+    "id": "막걸리",
+    "name_ko": "막걸리",
+    "name_en": "Makgeolli",
     "category": "나이트라이프",
     "average_price_krw": 8000,
     "price_tier": 2,
-    "ingredients": [
-      "쌀",
-      "누룩",
-      "물"
-    ],
-    "allergens": [
-      "alcohol",
-      "gluten"
-    ],
-    "tags": [
-      "전통주"
-    ],
+    "picture": "src/data/jommechu/photo/Makgeolli.png",
+    "ingredients": ["쌀", "누룩", "물"],
+    "allergens": ["alcohol", "gluten"],
+    "tags": ["전통주"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -2999,18 +1966,10 @@
     "category": "나이트라이프",
     "average_price_krw": 15000,
     "price_tier": 3,
-    "ingredients": [
-      "안주류",
-      "소주/맥주"
-    ],
-    "allergens": [
-      "alcohol",
-      "shellfish"
-    ],
-    "tags": [
-      "길거리",
-      "비"
-    ],
+    "picture": "src/data/jommechu/photo/Pojangmacha.png",
+    "ingredients": ["안주류", "소주/맥주"],
+    "allergens": ["alcohol", "shellfish"],
+    "tags": ["길거리", "비"],
     "weights": {
       "weather": {
         "sunny": 0.75,
@@ -3047,17 +2006,10 @@
     "category": "나이트라이프",
     "average_price_krw": 30000,
     "price_tier": 4,
-    "ingredients": [
-      "포도",
-      "효모"
-    ],
-    "allergens": [
-      "alcohol"
-    ],
-    "tags": [
-      "주류",
-      "고급"
-    ],
+    "picture": "src/data/jommechu/photo/Wine.png",
+    "ingredients": ["포도", "효모"],
+    "allergens": ["alcohol"],
+    "tags": ["주류", "고급"],
     "weights": {
       "weather": {
         "sunny": 0.6,
@@ -3080,101 +2032,6 @@
       },
       "mood": {
         "happy": 0.95,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
-    "id": "바/칵테일",
-    "name_ko": "바/칵테일",
-    "name_en": "Bar/Cocktail",
-    "category": "나이트라이프",
-    "average_price_krw": 15000,
-    "price_tier": 3,
-    "ingredients": [
-      "증류주",
-      "믹서"
-    ],
-    "allergens": [
-      "alcohol"
-    ],
-    "tags": [
-      "주류",
-      "야간"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.5,
-        "snowy": 0.9,
-        "temperature": 0.47,
-        "humidity": 0.51,
-        "wind": 0.68
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.5,
-        "autumn": 0.8,
-        "winter": 0.8
-      },
-      "day": {
-        "weekday": 0.5,
-        "weekend": 0.5
-      },
-      "mood": {
-        "happy": 0.95,
-        "sad": 0.5,
-        "stressed": 0.5,
-        "calm": 0.5,
-        "anxious": 0.5
-      }
-    }
-  },
-  {
-    "id": "사케",
-    "name_ko": "사케",
-    "name_en": "Sake",
-    "category": "나이트라이프",
-    "average_price_krw": 20000,
-    "price_tier": 4,
-    "ingredients": [
-      "쌀",
-      "누룩",
-      "물"
-    ],
-    "allergens": [
-      "alcohol"
-    ],
-    "tags": [
-      "주류",
-      "일식"
-    ],
-    "weights": {
-      "weather": {
-        "sunny": 0.6,
-        "cloudy": 0.55,
-        "rainy": 0.8,
-        "snowy": 0.5,
-        "temperature": 0.47,
-        "humidity": 0.69,
-        "wind": 0.57
-      },
-      "season": {
-        "spring": 0.5,
-        "summer": 0.5,
-        "autumn": 0.5,
-        "winter": 0.8
-      },
-      "day": {
-        "weekday": 0.5,
-        "weekend": 0.5
-      },
-      "mood": {
-        "happy": 0.5,
         "sad": 0.5,
         "stressed": 0.5,
         "calm": 0.5,
