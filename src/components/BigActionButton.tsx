@@ -17,7 +17,7 @@ export default function BigActionButton({
     >
       <div className="text-center text-white">
         <Utensils className="mx-auto h-16 w-16" />
-        <p className="mt-2 text-lg font-bold">점심 메뉴 추천</p>
+        <p className="mt-2 text-lg font-bold">지금 뭐 먹지?</p>
       </div>
     </button>
   );
