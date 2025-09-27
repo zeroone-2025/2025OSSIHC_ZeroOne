@@ -103,8 +103,6 @@ export default function RecommendationPage() {
   const { setThemeFromFlags } = useWeatherTheme();
   const [phase, setPhase] = useState<"loading" | "ready">("loading");
   const [menus, setMenus] = useState<MenuItem[]>([]);
-  const [weights, setWeights] = useState<Record<string, number>>({});
-  const [raw, setRaw] = useState<unknown>(null);
   const [errMsg, setErrMsg] = useState<string>("");
 
   const loadingMessages = useMemo(
@@ -124,8 +122,6 @@ export default function RecommendationPage() {
       const minDelayPromise = delay(3000);
       const indexPromise = loadImageIndex();
       let fetchedMenus: MenuItem[] | null = null;
-      let fetchedWeights: Record<string, number> | null = null;
-      let fetchedRaw: unknown = null;
       let errorMessage = "";
 
       try {
@@ -157,8 +153,6 @@ export default function RecommendationPage() {
         }
 
         fetchedMenus = limitedMenus;
-        fetchedWeights = data.weights ?? {};
-        fetchedRaw = data.raw ?? null;
 
         // API 응답의 flags로 테마 설정
         const flags = data.flags || generateWeatherFlags(data.raw);
@@ -166,8 +160,6 @@ export default function RecommendationPage() {
       } catch (error: any) {
         errorMessage = error?.message ?? "추천 데이터를 불러오는 중 문제가 발생했습니다.";
         fetchedMenus = FALLBACK_MENUS;
-        fetchedWeights = {};
-        fetchedRaw = null;
         // API 실패 시 기본 테마
         setThemeFromFlags([]);
       }
@@ -185,8 +177,6 @@ export default function RecommendationPage() {
         }));
 
       setMenus(finalMenus);
-      setWeights(fetchedWeights ?? {});
-      setRaw(fetchedRaw);
       setErrMsg(errorMessage);
       setPhase("ready");
     })();
@@ -263,20 +253,6 @@ export default function RecommendationPage() {
             ) : (
               <p className="py-16 text-center opacity-80 text-lg font-semibold" style={{ color: 'var(--app-fg)' }}>추천 결과가 없습니다.</p>
             )}
-
-            <section className="rounded-xl shadow-md ring-1 p-6 transition-colors duration-500" style={{ backgroundColor: 'var(--app-card)', color: 'var(--app-fg)', borderColor: 'var(--app-accent)' }}>
-              <h2 className="mb-4 text-base font-bold">요약</h2>
-              <pre className="whitespace-pre-wrap text-sm opacity-85 leading-relaxed">
-                {JSON.stringify(
-                  {
-                    weights,
-                    raw,
-                  },
-                  null,
-                  2
-                )}
-              </pre>
-            </section>
           </div>
         )}
       </main>

@@ -2,13 +2,26 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import WeatherBadge from "@/components/WeatherBadge";
+import { type ProcessedWeather } from "@/lib/ui/weatherIcon";
 import { useWeatherTheme } from "@/theme/WeatherThemeContext";
+
+type LiveWeatherResponse = {
+  weights: Record<string, number>;
+  raw?: {
+    processed?: ProcessedWeather;
+    source?: string;
+    timeKeyKST?: string;
+  };
+};
 
 export default function Home() {
   const router = useRouter();
   const { setThemeFromFlags } = useWeatherTheme();
   const [locationStatus, setLocationStatus] = useState<"loading" | "success" | "fallback">("loading");
   const [locationAddress, setLocationAddress] = useState<string>("");
+  const [weather, setWeather] = useState<ProcessedWeather | null>(null);
+  const [weatherTimeKey, setWeatherTimeKey] = useState<string | null>(null);
 
   useEffect(() => {
     // 홈 렌더링 시 날씨 API 호출하여 테마 설정
@@ -44,18 +57,30 @@ export default function Home() {
 
         const response = await fetch(`/api/weather/live?lat=${position.latitude}&lng=${position.longitude}`);
         if (response.ok) {
-          const data = await response.json();
+          const data: LiveWeatherResponse = await response.json();
           console.log("Weather data received:", data);
+          const processed = data.raw?.processed ?? null;
+          if (processed) {
+            setWeather(processed);
+            setWeatherTimeKey(data.raw?.timeKeyKST ?? null);
+          } else {
+            setWeather(null);
+            setWeatherTimeKey(null);
+          }
           // 날씨 데이터를 기반으로 flags 생성
-          const flags = generateWeatherFlags(data.raw);
+          const flags = generateWeatherFlags(processed);
           setThemeFromFlags(flags);
         } else {
           console.warn("Weather API failed, using default theme");
+          setWeather(null);
+          setWeatherTimeKey(null);
           setThemeFromFlags([]);
         }
       } catch (error) {
         console.warn("Failed to get location or weather data:", error);
         setLocationStatus("fallback");
+        setWeather(null);
+        setWeatherTimeKey(null);
         setThemeFromFlags([]);
       }
     }
@@ -172,40 +197,57 @@ export default function Home() {
   }
 
   // 날씨 데이터를 flags로 변환하는 함수
-  function generateWeatherFlags(raw: any): string[] {
+  function generateWeatherFlags(raw: ProcessedWeather | null | undefined): string[] {
     const flags: string[] = [];
 
     if (!raw) return flags;
 
-    // 온도 기반
-    if (typeof raw.T1H === 'number') {
-      if (raw.T1H >= 28) flags.push('hot');
-      if (raw.T1H <= 5) flags.push('cold');
+    if (typeof raw.T1H === "number") {
+      if (raw.T1H >= 28) flags.push("hot");
+      if (raw.T1H <= 5) flags.push("cold");
     }
 
-    // 강수 형태
     if (raw.PTY) {
-      if (raw.PTY === 1 || raw.PTY === 4) flags.push('rain');
-      if (raw.PTY === 2 || raw.PTY === 3) flags.push('snow');
+      if (raw.PTY === 1 || raw.PTY === 4) flags.push("rain");
+      if (raw.PTY === 2 || raw.PTY === 3) flags.push("snow");
     }
 
-    // 하늘 상태
     if (raw.SKY) {
-      if (raw.SKY >= 3) flags.push('cloudy');
+      if (raw.SKY >= 3) flags.push("cloudy");
     }
 
-    // 습도
-    if (typeof raw.REH === 'number' && raw.REH >= 80) {
-      flags.push('humid');
+    if (typeof raw.REH === "number" && raw.REH >= 80) {
+      flags.push("humid");
     }
 
-    // 풍속
-    if (typeof raw.WSD === 'number' && raw.WSD >= 4) {
-      flags.push('windy');
+    if (typeof raw.WSD === "number" && raw.WSD >= 4) {
+      flags.push("windy");
     }
 
     return flags;
   }
+
+  const temperatureText = typeof weather?.T1H === "number" ? `${Math.round(weather.T1H)}°C` : "불러오는 중";
+  const humidityText = typeof weather?.REH === "number" ? `${Math.round(weather.REH)}%` : "불러오는 중";
+  const skyText = (() => {
+    if (!weather) return "불러오는 중";
+    const { PTY, SKY } = weather;
+    if (PTY === 1 || PTY === 4) return "비";
+    if (PTY === 2 || PTY === 3 || PTY === 5 || PTY === 6 || PTY === 7) return "눈";
+    if (typeof SKY === "number") {
+      if (SKY >= 4) return "흐림";
+      if (SKY >= 3) return "구름많음";
+    }
+    return "맑음";
+  })();
+  const precipitationText = (() => {
+    if (!weather) return "불러오는 중";
+    const amount = Math.max(weather.RN1 ?? 0, weather.PCP ?? 0);
+    if (amount <= 0) return "0mm";
+    const rounded = Math.round(amount * 10) / 10;
+    return `${rounded}mm`;
+  })();
+  const weatherTimeLabel = weatherTimeKey ? `${weatherTimeKey} (KST)` : null;
 
   return (
     <div className="min-h-screen relative flex h-screen w-full flex-col justify-between font-display transition-colors duration-500" style={{ color: 'var(--app-fg)' }}>
@@ -262,39 +304,40 @@ export default function Home() {
             background: `linear-gradient(135deg, var(--app-accent), var(--app-bg-to))`,
             borderColor: 'var(--app-accent)'
           }}
-          aria-label="점심 메뉴 추천으로 이동"
+          aria-label="지금 뭐 먹지?로 이동"
         >
           <div className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] text-center">
             <span className="material-symbols-outlined text-8xl mb-2 block">restaurant_menu</span>
-            <p className="text-xl font-extrabold tracking-tight">점심 메뉴 추천</p>
+            <p className="text-xl font-extrabold tracking-tight">지금 뭐 먹지?</p>
           </div>
         </div>
       </main>
 
-      {/* Bottom weather card (placeholder) */}
+      {/* Bottom weather card */}
       <footer className="px-6 pb-8">
         <div className="mx-auto max-w-md rounded-xl shadow-lg backdrop-blur p-6 transition-colors duration-500" style={{ backgroundColor: 'var(--app-card)', color: 'var(--app-fg)' }}>
           <div className="flex items-start justify-between gap-6">
             <div className="flex-1">
-              <p className="text-base font-semibold opacity-90 mb-3">현재 날씨</p>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-base">
+              <p className="text-base font-semibold opacity-90">현재 날씨</p>
+              {weatherTimeLabel ? (
+                <p className="text-xs opacity-70 mt-1">기준 {weatherTimeLabel}</p>
+              ) : null}
+              <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-base">
                 <p>
-                  <span className="font-bold">온도:</span> 25°C
+                  <span className="font-bold">온도:</span> {temperatureText}
                 </p>
                 <p>
-                  <span className="font-bold">습도:</span> 60%
+                  <span className="font-bold">습도:</span> {humidityText}
                 </p>
                 <p>
-                  <span className="font-bold">하늘:</span> 맑음
+                  <span className="font-bold">하늘:</span> {skyText}
                 </p>
                 <p>
-                  <span className="font-bold">강수량:</span> 0mm
+                  <span className="font-bold">강수량:</span> {precipitationText}
                 </p>
               </div>
             </div>
-            <div className="flex h-20 w-20 items-center justify-center rounded-xl shadow-sm transition-colors duration-500" style={{ backgroundColor: 'var(--app-accent)', opacity: 0.3 }}>
-              <span className="material-symbols-outlined text-5xl drop-shadow-sm" style={{ color: 'var(--app-accent)' }}>thermostat</span>
-            </div>
+            <WeatherBadge processed={weather ?? undefined} className="min-w-[5rem]" />
           </div>
         </div>
       </footer>
