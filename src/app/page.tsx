@@ -8,21 +8,21 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 relative flex h-screen w-full flex-col justify-between font-display">
       {/* Top bar */}
-      <header className="sticky top-0 z-50 px-4 py-3 text-white dark:text-white bg-black/20 dark:bg-black/30 backdrop-blur-md">
+      <header className="sticky top-0 z-50 px-6 py-4 text-white dark:text-white bg-black/30 dark:bg-black/40 backdrop-blur-md">
         <div className="mx-auto max-w-md flex items-center justify-between">
           <button
-            className="h-10 w-10 grid place-items-center rounded-full bg-white/15"
+            className="h-12 w-12 grid place-items-center rounded-full bg-white/20 shadow-lg"
             onClick={() => location.reload()}
             aria-label="새로고침"
           >
-            <span className="material-symbols-outlined text-xl">refresh</span>
+            <span className="material-symbols-outlined text-2xl drop-shadow-sm">refresh</span>
           </button>
-          <span className="text-sm font-semibold truncate">군산시 명산동</span>
+          <span className="text-base font-bold truncate drop-shadow-sm">군산시 명산동</span>
           <button
-            className="h-10 w-10 grid place-items-center rounded-full bg-white/15"
+            className="h-12 w-12 grid place-items-center rounded-full bg-white/20 shadow-lg"
             aria-label="프로필"
           >
-            <span className="material-symbols-outlined text-xl">person</span>
+            <span className="material-symbols-outlined text-2xl drop-shadow-sm">person</span>
           </button>
         </div>
       </header>
@@ -39,39 +39,39 @@ export default function Home() {
               router.push("/recommendation");
             }
           }}
-          className="gradient-background rounded-full aspect-square w-64 shadow-2xl ring-1 ring-white/30 grid place-items-center cursor-pointer select-none"
+          className="gradient-background rounded-full aspect-square w-72 shadow-2xl ring-2 ring-white/40 grid place-items-center cursor-pointer select-none transition-transform hover:scale-105 active:scale-95"
           aria-label="점심 메뉴 추천으로 이동"
         >
-          <div className="text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
-            <span className="material-symbols-outlined text-6xl">restaurant_menu</span>
-            <p className="mt-2 text-lg font-extrabold tracking-tight">점심 메뉴 추천</p>
+          <div className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] text-center">
+            <span className="material-symbols-outlined text-8xl mb-2 block">restaurant_menu</span>
+            <p className="text-xl font-extrabold tracking-tight">점심 메뉴 추천</p>
           </div>
         </div>
       </main>
 
       {/* Bottom weather card (placeholder) */}
-      <footer className="px-4 pb-8">
-        <div className="mx-auto max-w-md rounded-xl bg-white/85 dark:bg-black/50 text-gray-900 dark:text-gray-100 shadow-md backdrop-blur p-4">
-          <div className="flex items-start justify-between gap-4">
+      <footer className="px-6 pb-8">
+        <div className="mx-auto max-w-md rounded-xl bg-white/95 dark:bg-black/70 text-gray-900 dark:text-gray-100 shadow-lg backdrop-blur p-6">
+          <div className="flex items-start justify-between gap-6">
             <div className="flex-1">
-              <p className="text-sm opacity-80">현재 날씨</p>
-              <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+              <p className="text-base font-semibold opacity-90 mb-3">현재 날씨</p>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-base">
                 <p>
-                  <span className="font-semibold">온도:</span> 25°C
+                  <span className="font-bold">온도:</span> 25°C
                 </p>
                 <p>
-                  <span className="font-semibold">습도:</span> 60%
+                  <span className="font-bold">습도:</span> 60%
                 </p>
                 <p>
-                  <span className="font-semibold">하늘:</span> 맑음
+                  <span className="font-bold">하늘:</span> 맑음
                 </p>
                 <p>
-                  <span className="font-semibold">강수량:</span> 0mm
+                  <span className="font-bold">강수량:</span> 0mm
                 </p>
               </div>
             </div>
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-primary/20">
-              <span className="material-symbols-outlined text-4xl text-primary">thermostat</span>
+            <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-primary/30 shadow-sm">
+              <span className="material-symbols-outlined text-5xl text-primary drop-shadow-sm">thermostat</span>
             </div>
           </div>
         </div>
