@@ -24,7 +24,8 @@
       "Bash(npm run test:vocab:*)",
       "Bash(tsc --noEmit)",
       "Bash(lsof:*)",
-      "Bash(curl -s \"http://localhost:3000/api/weather/live?lat=37.5665&lng=126.9780\")"
+      "Bash(curl -s \"http://localhost:3000/api/weather/live?lat=37.5665&lng=126.9780\")",
+      "Bash(npm run dev:https:*)"
     ],
     "deny": [],
     "ask": []
