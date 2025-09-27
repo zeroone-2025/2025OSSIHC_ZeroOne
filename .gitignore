@@ -60,7 +60,8 @@ dist
 
 # Gatsby files
 .cache/
-public
+public/*
+!public/placeholder.png
 
 # Storybook build outputs
 .out

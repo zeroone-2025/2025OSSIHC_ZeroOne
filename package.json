@@ -21,6 +21,7 @@
     "test": "vitest",
     "lint": "eslint",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "img:sync": "mkdir -p public/jommechu/photo && rsync -a src/data/jommechu/photo/ public/jommechu/photo/",
     "gen:images": "ts-node --transpile-only scripts/generateMenuImages.ts"
   },
   "eslintConfig": {

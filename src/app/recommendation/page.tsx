@@ -4,34 +4,31 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import LoadingSequence from "@/components/LoadingSequence";
 import MenuList, { type MenuItem } from "@/components/MenuList";
+import { resolveMenuImage } from "@/lib/resolveImage";
 import { useWeatherTheme } from "@/theme/WeatherThemeContext";
 
+type ApiMenu = Partial<MenuItem> & {
+  id?: string;
+  name_ko?: string;
+  name_en?: string;
+  picture?: string;
+};
+
 type RecoApiRes = {
-  menus?: { name: string; score: number; imageUrl?: string }[];
+  menus?: ApiMenu[];
   weights?: Record<string, number>;
   raw?: unknown;
   flags?: string[];
   error?: string;
 };
 
+const PLACEHOLDER_IMAGE = "/placeholder.png";
+
 const FALLBACK_MENUS: MenuItem[] = [
-  { name: "국밥", score: 0.82 },
-  { name: "비빔밥", score: 0.76 },
-  { name: "라멘", score: 0.72 },
+  { name: "국밥", score: 0.82, imageUrl: PLACEHOLDER_IMAGE },
+  { name: "비빔밥", score: 0.76, imageUrl: PLACEHOLDER_IMAGE },
+  { name: "라멘", score: 0.72, imageUrl: PLACEHOLDER_IMAGE },
 ];
-
-const PLACEHOLDER_IMAGE = "https://via.placeholder.com/64";
-
-async function loadImageIndex() {
-  try {
-    const res = await fetch("/kfood-index.json", { cache: "no-store" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return (await res.json()) as Record<string, string>;
-  } catch (error) {
-    console.warn("[kfood-index] load failed", error);
-    return {} as Record<string, string>;
-  }
-}
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -120,8 +117,7 @@ export default function RecommendationPage() {
 
     (async () => {
       const minDelayPromise = delay(3000);
-      const indexPromise = loadImageIndex();
-      let fetchedMenus: MenuItem[] | null = null;
+      let fetchedMenus: ApiMenu[] | null = null;
       let errorMessage = "";
 
       try {
@@ -143,8 +139,11 @@ export default function RecommendationPage() {
         const data: RecoApiRes = await response.json();
         const sortedMenus = Array.isArray(data.menus)
           ? [...data.menus]
-              .map((menu) => ({ ...menu, score: Number.isFinite(menu.score) ? menu.score : 0 }))
-              .sort((a, b) => b.score - a.score)
+              .map((menu) => ({
+                ...menu,
+                score: Number.isFinite(menu.score) ? Number(menu.score) : 0,
+              }))
+              .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
           : [];
         const limitedMenus = sortedMenus.slice(0, 10);
 
@@ -164,17 +163,34 @@ export default function RecommendationPage() {
         setThemeFromFlags([]);
       }
 
-      const imageIndex = await indexPromise;
       await minDelayPromise;
 
       if (cancelled) return;
 
-      const finalMenus = (fetchedMenus ?? FALLBACK_MENUS)
+      const finalMenus: MenuItem[] = (fetchedMenus ?? FALLBACK_MENUS)
         .slice(0, 10)
-        .map((menu) => ({
-          ...menu,
-          imageUrl: imageIndex?.[menu.name] ? decodeURI(imageIndex[menu.name]) : PLACEHOLDER_IMAGE,
-        }));
+        .map((menu) => {
+          const source = menu as ApiMenu;
+          const nameCandidate =
+            (typeof source.name_ko === "string" && source.name_ko.trim()) ||
+            (typeof source.name === "string" && source.name.trim()) ||
+            (typeof source.name_en === "string" && source.name_en.trim()) ||
+            (typeof source.id === "string" && source.id.trim()) ||
+            "메뉴";
+          const scoreValue =
+            typeof source.score === "number" && Number.isFinite(source.score)
+              ? source.score
+              : 0;
+          const imageSource =
+            typeof source.picture === "string" && source.picture
+              ? source.picture
+              : source.imageUrl;
+          return {
+            name: nameCandidate,
+            score: scoreValue,
+            imageUrl: resolveMenuImage(imageSource, nameCandidate),
+          };
+        });
 
       setMenus(finalMenus);
       setErrMsg(errorMessage);
