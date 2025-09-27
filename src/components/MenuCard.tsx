@@ -8,17 +8,17 @@ type Props = {
 };
 
 export default function MenuCard({ name, score, imageUrl }: Props) {
-  const src = imageUrl || "https://via.placeholder.com/64";
+  const src = imageUrl || "https://via.placeholder.com/80";
   return (
-    <div className="flex items-center gap-4 rounded-xl bg-white/90 dark:bg-black/50 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-black/5 dark:ring-white/10 p-4">
+    <div className="flex items-center gap-6 rounded-xl bg-white/95 dark:bg-black/60 text-gray-900 dark:text-gray-100 shadow-md ring-1 ring-black/10 dark:ring-white/15 p-6 transition-transform hover:scale-[1.02]">
       <img
         src={src}
         alt={name}
-        className="w-16 h-16 object-cover rounded-lg ring-1 ring-black/10 dark:ring-white/20"
+        className="w-20 h-20 object-cover rounded-xl ring-2 ring-black/15 dark:ring-white/25 shadow-sm"
       />
       <div className="flex-1 min-w-0">
-        <p className="font-semibold truncate">{name}</p>
-        <p className="text-sm opacity-80">추천도: {score.toFixed(2)}</p>
+        <p className="text-lg font-bold truncate mb-1">{name}</p>
+        <p className="text-base font-semibold opacity-85">추천도: {(score * 100).toFixed(0)}점</p>
       </div>
     </div>
   );

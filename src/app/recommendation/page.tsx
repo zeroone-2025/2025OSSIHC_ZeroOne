@@ -136,38 +136,38 @@ export default function RecommendationPage() {
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 flex flex-col max-w-md mx-auto">
-      <header className="sticky top-0 z-50 px-4 py-3 text-white dark:text-white bg-black/20 dark:bg-black/30 backdrop-blur-md">
+      <header className="sticky top-0 z-50 px-6 py-4 text-white dark:text-white bg-black/30 dark:bg-black/40 backdrop-blur-md">
         <div className="mx-auto max-w-md flex items-center justify-between">
           <button
             type="button"
             onClick={() => router.back()}
-            className="h-10 w-10 grid place-items-center rounded-full bg-white/15"
+            className="h-12 w-12 grid place-items-center rounded-full bg-white/20 shadow-lg"
             aria-label="뒤로가기"
           >
-            <span className="material-symbols-outlined text-xl">arrow_back</span>
+            <span className="material-symbols-outlined text-2xl drop-shadow-sm">arrow_back</span>
           </button>
-          <span className="text-sm font-semibold truncate">추천 메뉴 리스트</span>
-          <div className="w-10" aria-hidden />
+          <span className="text-base font-bold truncate drop-shadow-sm">추천 메뉴 리스트</span>
+          <div className="w-12" aria-hidden />
         </div>
         {errMsg ? (
-          <p className="mt-2 text-center text-sm text-red-400">주의: {errMsg} (임시 추천 표시 중)</p>
+          <p className="mt-3 text-center text-base text-red-300 font-semibold drop-shadow-sm">주의: {errMsg} (임시 추천 표시 중)</p>
         ) : null}
       </header>
 
-      <main className="px-4 pb-24 pt-16 mx-auto max-w-md flex-1 overflow-y-auto">
+      <main className="px-6 pb-28 pt-20 mx-auto max-w-md flex-1 overflow-y-auto">
         {phase === "loading" ? (
           <LoadingSequence messages={loadingMessages} totalMs={3000} stepMs={800} />
         ) : (
-          <div className="space-y-6 pt-4">
+          <div className="space-y-8 pt-6">
             {menus.length > 0 ? (
               <MenuList menus={menus} />
             ) : (
-              <p className="py-12 text-center text-gray-900 dark:text-gray-100 opacity-70">추천 결과가 없습니다.</p>
+              <p className="py-16 text-center text-gray-900 dark:text-gray-100 opacity-80 text-lg font-semibold">추천 결과가 없습니다.</p>
             )}
 
-            <section className="rounded-xl bg-white/90 dark:bg-black/50 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-black/5 dark:ring-white/10 p-4">
-              <h2 className="mb-2 text-sm font-semibold">요약</h2>
-              <pre className="whitespace-pre-wrap text-xs opacity-80">
+            <section className="rounded-xl bg-white/95 dark:bg-black/60 text-gray-900 dark:text-gray-100 shadow-md ring-1 ring-black/10 dark:ring-white/20 p-6">
+              <h2 className="mb-4 text-base font-bold">요약</h2>
+              <pre className="whitespace-pre-wrap text-sm opacity-85 leading-relaxed">
                 {JSON.stringify(
                   {
                     weights,
@@ -182,14 +182,14 @@ export default function RecommendationPage() {
         )}
       </main>
 
-      <footer className="fixed bottom-0 inset-x-0 z-40 bg-white/90 dark:bg-black/60 backdrop-blur border-t border-black/10 dark:border-white/10">
-        <div className="mx-auto max-w-md p-3">
+      <footer className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-black/70 backdrop-blur border-t border-black/15 dark:border-white/15 shadow-lg">
+        <div className="mx-auto max-w-md p-4">
           <button
             type="button"
             onClick={() => router.push("/")}
-            className="w-full h-12 rounded-lg font-semibold bg-primary text-white hover:opacity-90 active:opacity-80 flex items-center justify-center gap-2"
+            className="w-full h-16 rounded-xl font-bold text-lg bg-primary text-white hover:opacity-90 active:opacity-80 flex items-center justify-center gap-3 shadow-md transition-all"
           >
-            <span className="material-symbols-outlined">home</span>
+            <span className="material-symbols-outlined text-2xl">home</span>
             <span>홈으로 돌아가기</span>
           </button>
         </div>
