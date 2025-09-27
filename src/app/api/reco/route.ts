@@ -1,42 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveWeather, type WeatherWeights } from '@/lib/weather';
-import type { RecoRes } from '@/types';
 
-type Coeff = { A: number; B: number; C: number; D: number; E: number; F: number; G: number; base: number };
-
-const MENUS: Record<string, Coeff> = {
-  '국밥':     { base: 0.5,  A: +0.9, B: -0.6, C: +0.5, D: +0.6, E: +0.7, F: -0.4, G: +0.3 },
-  '칼국수':   { base: 0.5,  A: +0.8, B: -0.5, C: +0.4, D: +0.7, E: +0.5, F: -0.4, G: +0.2 },
-  '파전':     { base: 0.4,  A: +0.4, B: -0.2, C: +0.6, D: +1.0, E: +0.2, F: -0.3, G: +0.1 },
-  '냉면':     { base: 0.45, A: -0.6, B: +0.9, C: -0.2, D:  0.0, E:  0.0, F: +0.7, G: -0.2 },
-  '메밀소바': { base: 0.4,  A: -0.5, B: +0.8, C: -0.2, D:  0.0, E:  0.0, F: +0.6, G: -0.2 },
-  '어묵탕':   { base: 0.35, A: +0.9, B: -0.6, C: +0.4, D: +0.2, E: +0.9, F: -0.3, G: +0.2 },
-  '비빔밥':   { base: 0.5,  A: +0.1, B: +0.1, C:  0.0, D:  0.0, E:  0.0, F: +0.1, G:  0.0 },
-  '돈까스':   { base: 0.45, A: +0.1, B: -0.2, C: +0.1, D:  0.0, E:  0.0, F: -0.2, G: +0.3 },
+const MENU_RULES: Record<string, string[]> = {
+  cold: ['국밥','라멘','우동','찌개'],
+  rain: ['파전','칼국수','짬뽕'],
+  hot: ['냉면','회덮밥','샐러드'],
+  humid: ['비빔국수','메밀소바'],
+  gloomy: ['부대찌개','전'],
+  gloom: ['부대찌개','전'],
+  dry: ['설렁탕','순대국'],
+  windy: ['돈까스','카레'],
 };
 
-function score(c: Coeff, w: WeatherWeights) {
-  return c.base + c.A * w.W_cold + c.B * w.W_hot + c.C * w.W_gloom + c.D * w.W_rain + c.E * w.W_snow + c.F * w.W_humid + c.G * w.W_wind;
+function pickByFlags(flags: string[]): string[] {
+  const bag = new Set<string>();
+  for (const f of flags) (MENU_RULES[f] || []).forEach(m => bag.add(m));
+  if (bag.size === 0) ['국밥','비빔밥','김치찌개'].forEach(m => bag.add(m));
+  return Array.from(bag).slice(0, 3);
 }
 
 export async function POST(req: NextRequest) {
   try {
     const { lat, lng } = await req.json();
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
       return NextResponse.json({ error: 'INVALID_COORDS' }, { status: 400 });
     }
-
-    const result = await resolveWeather(lat, lng);
-    const weights = result.weights;
-    const menus = Object.entries(MENUS)
-      .map(([name, coeff]) => ({ name, value: score(coeff, weights) }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 3)
-      .map((item) => item.name);
-
-    const payload: RecoRes = { flags: result.flags, menus };
-    return NextResponse.json(payload);
-  } catch (error: any) {
-    return NextResponse.json({ error: error?.message ?? 'SERVER_ERROR' }, { status: 500 });
+    const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:8080';
+    const url = new URL('/api/weather/live', base);
+    url.searchParams.set('lat', String(lat));
+    url.searchParams.set('lng', String(lng));
+    const r = await fetch(url.toString(), { cache: 'no-store' });
+    const j = await r.json();
+    const flags: string[] = Array.isArray(j?.flags) ? j.flags : [];
+    const menus = pickByFlags(flags);
+    return NextResponse.json({ flags, menus, source: j?.source ?? 'fallback' });
+  } catch (e:any) {
+    return NextResponse.json({ error: 'SERVER_ERROR', detail: String(e?.message || e) }, { status: 500 });
   }
 }
