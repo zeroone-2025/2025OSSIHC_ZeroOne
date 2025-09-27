@@ -37,14 +37,65 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function getPosition(options?: PositionOptions) {
-  return new Promise<GeolocationPosition>((resolve, reject) => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      reject(new Error("위치 정보를 사용할 수 없습니다."));
-      return;
+// 개선된 위치 정보 가져오기 함수
+async function getLocationWithFallback(): Promise<{latitude: number, longitude: number}> {
+  // 기본 위치 (서울 시청)
+  const defaultLocation = { latitude: 37.5665, longitude: 126.9780 };
+
+  // 브라우저 지원 여부 확인
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    console.warn("Geolocation not supported, using default location");
+    return defaultLocation;
+  }
+
+  try {
+    console.log("Requesting geolocation permission...");
+
+    // 먼저 권한 상태 확인 (지원하는 브라우저에서만)
+    if ('permissions' in navigator) {
+      const permission = await navigator.permissions.query({name: 'geolocation'});
+      console.log("Geolocation permission status:", permission.state);
+
+      if (permission.state === 'denied') {
+        console.warn("Geolocation permission denied, using default location");
+        return defaultLocation;
+      }
     }
-    navigator.geolocation.getCurrentPosition(resolve, reject, options);
-  });
+
+    // 위치 정보 요청
+    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error("Geolocation timeout"));
+      }, 10000); // 10초로 늘림
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          clearTimeout(timeoutId);
+          resolve(pos);
+        },
+        (error) => {
+          clearTimeout(timeoutId);
+          reject(error);
+        },
+        {
+          enableHighAccuracy: false, // 더 빠른 응답을 위해 false로 변경
+          timeout: 10000,
+          maximumAge: 300000 // 5분간 캐시된 위치 허용
+        }
+      );
+    });
+
+    console.log("Geolocation success:", position.coords);
+    return {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude
+    };
+
+  } catch (error) {
+    console.warn("Geolocation failed:", error);
+    console.log("Using default location (Seoul)");
+    return defaultLocation;
+  }
 }
 
 export default function RecommendationPage() {
@@ -78,11 +129,13 @@ export default function RecommendationPage() {
       let errorMessage = "";
 
       try {
-        const position = await getPosition({ enableHighAccuracy: true, timeout: 8000 });
+        const position = await getLocationWithFallback();
+        console.log("Using location for recommendation:", position);
+
         const response = await fetch("/api/reco", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lat: position.coords.latitude, lng: position.coords.longitude }),
+          body: JSON.stringify({ lat: position.latitude, lng: position.longitude }),
           cache: "no-store",
         });
 
