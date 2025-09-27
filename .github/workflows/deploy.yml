@@ -1,0 +1,72 @@
+name: Deploy
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: {}
+
+env:
+  # This section is now just for reference, the script uses a hardcoded path.
+  APP_DIR: /var/www/whymeal/2025OSSIHC_ZeroOne
+  PM2_NAME: whymeal
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sanity check secrets
+        run: |
+          test -n "${{ secrets.SSH_HOST }}" || (echo "SSH_HOST missing" && exit 1)
+          test -n "${{ secrets.SSH_PORT }}" || (echo "SSH_PORT missing" && exit 1)
+          test -n "${{ secrets.SSH_USERNAME }}" || (echo "SSH_USERNAME missing" && exit 1)
+          test -n "${{ secrets.SSH_PRIVATE_KEY }}" || (echo "SSH_PRIVATE_KEY missing" && exit 1)
+
+      - name: Remote deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          timeout: 30s
+          command_timeout: 10m
+          script: |
+            set -e
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            
+            cd /var/www/whymeal/2025OSSIHC_ZeroOne
+            
+            echo "✅ Successfully moved to directory:"
+            pwd
+
+            git fetch --all
+            git reset --hard origin/main
+
+            # 🔧 package.json에 build/start 없으면 자동 추가
+            node -e "let p=require('./package.json');p.scripts=p.scripts||{};if(!p.scripts.build)p.scripts.build='next build';if(!p.scripts.start)p.scripts.start='next start -p 8080';require('fs').writeFileSync('package.json',JSON.stringify(p,null,2))"
+
+            # --- 💡 FIX: 이전 빌드 찌꺼기 및 캐시를 완전히 삭제하여 깨끗한 설치 환경을 보장합니다 ---
+            echo "🧹 Cleaning up previous build artifacts and node modules..."
+            rm -rf .next node_modules
+            npm cache clean --force
+            echo "✅ Cleanup complete."
+
+            echo "📦 Installing dependencies..."
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi
+            echo "✅ Dependencies installed."
+            
+            echo "🚀 Building the application..."
+            NODE_ENV=production npm run build
+            echo "✅ Build successful."
+
+            # --- FIX: Use workflow env context for PM2 name ---
+            pm2 restart ${{ env.PM2_NAME }} || pm2 start npm --name "${{ env.PM2_NAME }}" -- start
+            pm2 save
+            pm2 ls
+            ss -ltnp | grep -E ':3000|:8080' || true

@@ -1,0 +1,151 @@
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom CSS Variables for theming */
+:root {
+  --background-light: #f8fafc;
+  --background-dark: #0f172a;
+  --primary: #3b82f6;
+}
+
+/* Weather Theme Variables */
+:root {
+  /* Default (sunny) theme */
+  --app-bg-from: #FFE082;
+  --app-bg-to: #FFC107;
+  --app-fg: #1f1f1f;
+  --app-card: rgba(255,255,255,.9);
+  --app-accent: #FFB300;
+}
+
+:root[data-theme="rain"] {
+  --app-bg-from: #0F172A;
+  --app-bg-to: #1E293B;
+  --app-fg: #E5E7EB;
+  --app-card: rgba(17,24,39,.7);
+  --app-accent: #60A5FA;
+}
+
+:root[data-theme="snow"] {
+  --app-bg-from: #D6EAF8;
+  --app-bg-to: #AED6F1;
+  --app-fg: #0f172a;
+  --app-card: rgba(255,255,255,.95);
+  --app-accent: #5AC8FA;
+}
+
+:root[data-theme="cloudy"] {
+  --app-bg-from: #CBD5E1;
+  --app-bg-to: #94A3B8;
+  --app-fg: #111827;
+  --app-card: rgba(255,255,255,.9);
+  --app-accent: #64748B;
+}
+
+:root[data-theme="hot"] {
+  --app-bg-from: #FF7043;
+  --app-bg-to: #FF3D00;
+  --app-fg: #1f1f1f;
+  --app-card: rgba(255,255,255,.9);
+  --app-accent: #FF6D00;
+}
+
+:root[data-theme="cold"] {
+  --app-bg-from: #64B5F6;
+  --app-bg-to: #1976D2;
+  --app-fg: #E5E7EB;
+  --app-card: rgba(17,24,39,.7);
+  --app-accent: #42A5F5;
+}
+
+:root[data-theme="humid"] {
+  --app-bg-from: #A7F3D0;
+  --app-bg-to: #34D399;
+  --app-fg: #064E3B;
+  --app-card: rgba(255,255,255,.92);
+  --app-accent: #10B981;
+}
+
+:root[data-theme="windy"] {
+  --app-bg-from: #C7D2FE;
+  --app-bg-to: #818CF8;
+  --app-fg: #111827;
+  --app-card: rgba(255,255,255,.9);
+  --app-accent: #6366F1;
+}
+
+body {
+  @apply min-h-screen transition-colors duration-500;
+  background: linear-gradient(to bottom, var(--app-bg-from), var(--app-bg-to));
+  color: var(--app-fg);
+}
+
+/* Use `bg-white` for cards and lay them over `bg-brand-bg` sections to preserve depth. */
+/* Card base: bg-white rounded-xl border border-brand-sub1/40 shadow-card */
+
+.section {
+  margin: 1.5rem 0;
+}
+
+a {
+  color: #FA812F;
+  text-decoration: none;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid #FA812F;
+  outline-offset: 2px;
+}
+
+/* Gradient background for the action button */
+.gradient-background {
+  background: linear-gradient(180deg, #0ea5e9 0%, #2563eb 100%);
+}
+.dark .gradient-background {
+  background: linear-gradient(180deg, #0b3a66 0%, #0f172a 100%);
+}
+
+/* Custom background classes */
+.bg-background-light {
+  background-color: var(--background-light);
+}
+
+.bg-background-dark {
+  background-color: var(--background-dark);
+}
+
+/* Primary color class */
+.text-primary {
+  color: var(--primary);
+}
+
+.bg-primary\/20 {
+  background-color: rgb(59 130 246 / 0.2);
+}
+
+/* Font display class */
+.font-display {
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 1em;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -moz-font-feature-settings: "liga";
+  -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+}

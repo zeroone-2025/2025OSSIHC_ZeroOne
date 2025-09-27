@@ -1,0 +1,837 @@
+[
+  {
+    "id": "파전/모듬전/빈대떡",
+    "name_ko": "파전/모듬전/빈대떡",
+    "name_en": "Pajeon/Assorted Jeon",
+    "category": "한식",
+    "average_price_krw": 15000,
+    "price_tier": 3,
+    "ingredients": [
+      "밀가루",
+      "파",
+      "해물",
+      "계란"
+    ],
+    "allergens": [
+      "gluten",
+      "egg",
+      "shellfish"
+    ],
+    "tags": [
+      "부침",
+      "비",
+      "안주"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.95,
+        "snowy": 0.5,
+        "temperature": 0.52,
+        "humidity": 0.78,
+        "wind": 0.62
+      },
+      "season": {
+        "spring": 0.9,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.5,
+        "weekend": 0.5
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.5,
+        "stressed": 0.5,
+        "calm": 0.5,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "삼계탕/백숙/찜닭",
+    "name_ko": "삼계탕/백숙/찜닭",
+    "name_en": "Samgyetang/Baeksuk/Jjimdak",
+    "category": "한식",
+    "average_price_krw": 17000,
+    "price_tier": 3,
+    "ingredients": [
+      "닭",
+      "인삼",
+      "찹쌀",
+      "대추"
+    ],
+    "allergens": [],
+    "tags": [
+      "보양",
+      "국물",
+      "닭"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.75,
+        "cloudy": 0.55,
+        "rainy": 0.9,
+        "snowy": 0.5,
+        "temperature": 0.85,
+        "humidity": 0.84,
+        "wind": 0.57
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.95,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.9,
+        "weekend": 0.6
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.5,
+        "stressed": 0.5,
+        "calm": 0.5,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "떡볶이/순대/튀김/만두",
+    "name_ko": "떡볶이/순대/튀김/만두",
+    "name_en": "Tteokbokki/Sundae/Fritters/Dumplings",
+    "category": "한식",
+    "average_price_krw": 8000,
+    "price_tier": 2,
+    "ingredients": [
+      "떡",
+      "어묵",
+      "고추장",
+      "순대"
+    ],
+    "allergens": [
+      "gluten",
+      "fish"
+    ],
+    "tags": [
+      "맵기",
+      "분식",
+      "간식"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.5,
+        "snowy": 0.5,
+        "temperature": 0.52,
+        "humidity": 0.51,
+        "wind": 0.48
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.6,
+        "weekend": 0.9
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.85,
+        "stressed": 0.9,
+        "calm": 0.3,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "비빔밥/돌솥밥/쌈밥",
+    "name_ko": "비빔밥/돌솥밥/쌈밥",
+    "name_en": "Bibimbap/Dolsotbap/Ssambap",
+    "category": "한식",
+    "average_price_krw": 9000,
+    "price_tier": 2,
+    "ingredients": [
+      "밥",
+      "나물",
+      "고추장",
+      "계란"
+    ],
+    "allergens": [
+      "egg",
+      "gluten"
+    ],
+    "tags": [
+      "밥",
+      "채소",
+      "균형"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.8,
+        "cloudy": 0.55,
+        "rainy": 0.45,
+        "snowy": 0.5,
+        "temperature": 0.83,
+        "humidity": 0.56,
+        "wind": 0.43
+      },
+      "season": {
+        "spring": 0.8,
+        "summer": 0.9,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.5,
+        "weekend": 0.5
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.5,
+        "stressed": 0.5,
+        "calm": 0.9,
+        "anxious": 0.8
+      }
+    }
+  },
+  {
+    "id": "감자탕",
+    "name_ko": "감자탕",
+    "name_en": "Gamjatang",
+    "category": "한식",
+    "average_price_krw": 28000,
+    "price_tier": 4,
+    "ingredients": [
+      "돼지등뼈",
+      "감자",
+      "우거지",
+      "들깨"
+    ],
+    "allergens": [],
+    "tags": [
+      "매운탕",
+      "모임"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.5,
+        "snowy": 0.8,
+        "temperature": 0.46,
+        "humidity": 0.51,
+        "wind": 0.63
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.9
+      },
+      "day": {
+        "weekday": 0.9,
+        "weekend": 0.6
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.85,
+        "stressed": 0.9,
+        "calm": 0.3,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "칼국수",
+    "name_ko": "칼국수",
+    "name_en": "Kalguksu",
+    "category": "한식",
+    "average_price_krw": 9000,
+    "price_tier": 2,
+    "ingredients": [
+      "밀가루면",
+      "해물/닭",
+      "육수",
+      "야채"
+    ],
+    "allergens": [
+      "gluten",
+      "shellfish"
+    ],
+    "tags": [
+      "면",
+      "국물"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.5,
+        "snowy": 0.8,
+        "temperature": 0.46,
+        "humidity": 0.51,
+        "wind": 0.63
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.9
+      },
+      "day": {
+        "weekday": 0.5,
+        "weekend": 0.5
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.5,
+        "stressed": 0.5,
+        "calm": 0.5,
+        "anxious": 0.8
+      }
+    }
+  },
+  {
+    "id": "김밥",
+    "name_ko": "김밥",
+    "name_en": "Gimbap",
+    "category": "한식",
+    "average_price_krw": 4000,
+    "price_tier": 1,
+    "ingredients": [
+      "김",
+      "밥",
+      "단무지",
+      "계란"
+    ],
+    "allergens": [
+      "egg",
+      "fish",
+      "sesame"
+    ],
+    "tags": [
+      "간편",
+      "포장"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.5,
+        "snowy": 0.5,
+        "temperature": 0.52,
+        "humidity": 0.51,
+        "wind": 0.48
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.5,
+        "weekend": 0.5
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.5,
+        "stressed": 0.5,
+        "calm": 0.9,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "라면",
+    "name_ko": "라면",
+    "name_en": "Ramyeon (Instant Noodles)",
+    "category": "한식",
+    "average_price_krw": 4000,
+    "price_tier": 1,
+    "ingredients": [
+      "면",
+      "스프",
+      "계란",
+      "파"
+    ],
+    "allergens": [
+      "gluten",
+      "egg"
+    ],
+    "tags": [
+      "면",
+      "간편",
+      "매운"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.5,
+        "snowy": 0.5,
+        "temperature": 0.52,
+        "humidity": 0.51,
+        "wind": 0.48
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.5,
+        "weekend": 0.5
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.85,
+        "stressed": 0.9,
+        "calm": 0.3,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "만두",
+    "name_ko": "만두",
+    "name_en": "Mandu (Dumplings)",
+    "category": "한식",
+    "average_price_krw": 7000,
+    "price_tier": 1,
+    "ingredients": [
+      "만두피",
+      "돼지고기",
+      "부추",
+      "두부"
+    ],
+    "allergens": [
+      "gluten",
+      "soy"
+    ],
+    "tags": [
+      "간식",
+      "찐/군"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.5,
+        "snowy": 0.5,
+        "temperature": 0.52,
+        "humidity": 0.51,
+        "wind": 0.48
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.5,
+        "weekend": 0.5
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.5,
+        "stressed": 0.5,
+        "calm": 0.5,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "장어구이/꼼장어",
+    "name_ko": "장어구이/꼼장어",
+    "name_en": "Eel Roast/Sea Eel",
+    "category": "한식",
+    "average_price_krw": 35000,
+    "price_tier": 5,
+    "ingredients": [
+      "장어",
+      "양념",
+      "마늘"
+    ],
+    "allergens": [
+      "fish"
+    ],
+    "tags": [
+      "보양",
+      "구이"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.75,
+        "cloudy": 0.55,
+        "rainy": 0.5,
+        "snowy": 0.5,
+        "temperature": 0.82,
+        "humidity": 0.59,
+        "wind": 0.45
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.9,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.5,
+        "weekend": 0.5
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.5,
+        "stressed": 0.5,
+        "calm": 0.5,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "삼겹살/목살",
+    "name_ko": "삼겹살/목살",
+    "name_en": "Pork Belly/Neck BBQ",
+    "category": "고기/구이류",
+    "average_price_krw": 16000,
+    "price_tier": 3,
+    "ingredients": [
+      "돼지고기",
+      "마늘",
+      "상추",
+      "쌈장"
+    ],
+    "allergens": [],
+    "tags": [
+      "구이",
+      "회식"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.5,
+        "snowy": 0.95,
+        "temperature": 0.52,
+        "humidity": 0.51,
+        "wind": 0.71
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.5,
+        "weekend": 0.5
+      },
+      "mood": {
+        "happy": 0.95,
+        "sad": 0.5,
+        "stressed": 0.5,
+        "calm": 0.5,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "불고기/갈비살/차돌박이",
+    "name_ko": "불고기/갈비살/차돌박이",
+    "name_en": "Bulgogi/Beef Cuts",
+    "category": "고기/구이류",
+    "average_price_krw": 20000,
+    "price_tier": 4,
+    "ingredients": [
+      "소고기",
+      "간장",
+      "설탕",
+      "파"
+    ],
+    "allergens": [],
+    "tags": [
+      "구이",
+      "한식고기"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.5,
+        "snowy": 0.5,
+        "temperature": 0.52,
+        "humidity": 0.51,
+        "wind": 0.48
+      },
+      "season": {
+        "spring": 0.8,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.5,
+        "weekend": 0.5
+      },
+      "mood": {
+        "happy": 0.95,
+        "sad": 0.5,
+        "stressed": 0.5,
+        "calm": 0.5,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "꽃등심/등심/육회",
+    "name_ko": "꽃등심/등심/육회",
+    "name_en": "Prime Ribeye/Beef Tartare",
+    "category": "고기/구이류",
+    "average_price_krw": 25000,
+    "price_tier": 4,
+    "ingredients": [
+      "소고기",
+      "참기름",
+      "배"
+    ],
+    "allergens": [
+      "sesame"
+    ],
+    "tags": [
+      "고급",
+      "회식"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.5,
+        "snowy": 0.5,
+        "temperature": 0.52,
+        "humidity": 0.51,
+        "wind": 0.48
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.5,
+        "weekend": 0.5
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.5,
+        "stressed": 0.5,
+        "calm": 0.5,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "닭갈비",
+    "name_ko": "닭갈비",
+    "name_en": "Dakgalbi",
+    "category": "고기/구이류",
+    "average_price_krw": 14000,
+    "price_tier": 3,
+    "ingredients": [
+      "닭",
+      "고추장",
+      "양배추",
+      "깻잎"
+    ],
+    "allergens": [],
+    "tags": [
+      "매콤",
+      "볶음"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.5,
+        "snowy": 0.5,
+        "temperature": 0.52,
+        "humidity": 0.51,
+        "wind": 0.48
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.5,
+        "weekend": 0.5
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.5,
+        "stressed": 0.5,
+        "calm": 0.5,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "족발/보쌈",
+    "name_ko": "족발/보쌈",
+    "name_en": "Jokbal/Bossam",
+    "category": "고기/구이류",
+    "average_price_krw": 35000,
+    "price_tier": 5,
+    "ingredients": [
+      "돼지족/수육",
+      "새우젓",
+      "김치"
+    ],
+    "allergens": [
+      "shellfish"
+    ],
+    "tags": [
+      "모임",
+      "보쌈"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.45,
+        "snowy": 0.5,
+        "temperature": 0.52,
+        "humidity": 0.48,
+        "wind": 0.47
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.5,
+        "weekend": 0.5
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.5,
+        "stressed": 0.5,
+        "calm": 0.5,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "중국음식 (짜장면)",
+    "name_ko": "중국음식 (짜장면)",
+    "name_en": "Chinese (Jajangmyeon)",
+    "category": "일식/중식/세계음식",
+    "average_price_krw": 8000,
+    "price_tier": 2,
+    "ingredients": [
+      "면",
+      "춘장",
+      "돼지고기",
+      "양파"
+    ],
+    "allergens": [
+      "gluten",
+      "soy"
+    ],
+    "tags": [
+      "면",
+      "배달"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.5,
+        "snowy": 0.5,
+        "temperature": 0.52,
+        "humidity": 0.51,
+        "wind": 0.48
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.5,
+        "weekend": 0.5
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.5,
+        "stressed": 0.5,
+        "calm": 0.5,
+        "anxious": 0.5
+      }
+    }
+  },
+  {
+    "id": "피자",
+    "name_ko": "피자",
+    "name_en": "Pizza",
+    "category": "양식/레스토랑",
+    "average_price_krw": 25000,
+    "price_tier": 4,
+    "ingredients": [
+      "도우",
+      "토마토소스",
+      "치즈"
+    ],
+    "allergens": [
+      "gluten",
+      "dairy"
+    ],
+    "tags": [
+      "공유",
+      "모임"
+    ],
+    "weights": {
+      "weather": {
+        "sunny": 0.6,
+        "cloudy": 0.55,
+        "rainy": 0.5,
+        "snowy": 0.5,
+        "temperature": 0.52,
+        "humidity": 0.51,
+        "wind": 0.48
+      },
+      "season": {
+        "spring": 0.5,
+        "summer": 0.5,
+        "autumn": 0.5,
+        "winter": 0.5
+      },
+      "day": {
+        "weekday": 0.6,
+        "weekend": 0.9
+      },
+      "mood": {
+        "happy": 0.5,
+        "sad": 0.85,
+        "stressed": 0.9,
+        "calm": 0.3,
+        "anxious": 0.5
+      }
+    }
+  }
+]

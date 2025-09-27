@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(iconv:*)",
+      "Bash(npx create-react-app:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss init:*)",
+      "Bash(npm test)",
+      "Bash(npm run test:*)",
+      "Bash(pkill:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run lint)",
+      "Bash(chmod:*)",
+      "Bash(./cleanup_data.sh:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(cp:*)",
+      "Bash(node:*)",
+      "Bash(npm run check:vocab:*)",
+      "Bash(npm run test:vocab:*)",
+      "Bash(tsc --noEmit)",
+      "Bash(lsof:*)",
+      "Bash(curl -s \"http://localhost:3000/api/weather/live?lat=37.5665&lng=126.9780\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
