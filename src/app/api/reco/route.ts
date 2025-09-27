@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "INVALID_COORDS" }, { status: 400 });
     }
 
-    const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8080";
+    const base = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
     const wres = await fetch(new URL("/api/weather/live?lat=" + lat + "&lng=" + lng, base).toString(), { cache: "no-store" });
     if (!wres.ok) {
       // 날씨 실패 시 가을철 임시 가중치(선형 중간값) 적용
