@@ -44,13 +44,22 @@ export default function LoadingSequence({
 
   return (
     <div className="min-h-[60vh] grid place-items-center px-6">
-      <div className="w-full max-w-md rounded-xl bg-black p-5 font-mono text-green-400 shadow-lg">
+      <div
+        className="w-full max-w-md rounded-xl p-5 font-mono shadow-lg transition-colors duration-500"
+        style={{
+          backgroundColor: 'var(--app-card)',
+          color: 'var(--app-accent)',
+          borderColor: 'var(--app-accent)'
+        }}
+      >
         {messages.slice(0, visibleCount).map((m, i) => (
-          <p key={i} className="opacity-90">
+          <p key={i} className="opacity-90" style={{ color: 'var(--app-fg)' }}>
             {m}
           </p>
         ))}
-        {visibleCount === 0 && <p className="opacity-60">초기화 중...</p>}
+        {visibleCount === 0 && (
+          <p className="opacity-60" style={{ color: 'var(--app-accent)' }}>초기화 중...</p>
+        )}
       </div>
     </div>
   );

@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import LoadingSequence from "@/components/LoadingSequence";
 import MenuList, { type MenuItem } from "@/components/MenuList";
+import { useWeatherTheme } from "@/theme/WeatherThemeContext";
 
 type RecoApiRes = {
   menus?: { name: string; score: number; imageUrl?: string }[];
   weights?: Record<string, number>;
   raw?: unknown;
+  flags?: string[];
   error?: string;
 };
 
@@ -47,6 +49,7 @@ function getPosition(options?: PositionOptions) {
 
 export default function RecommendationPage() {
   const router = useRouter();
+  const { setThemeFromFlags } = useWeatherTheme();
   const [phase, setPhase] = useState<"loading" | "ready">("loading");
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [weights, setWeights] = useState<Record<string, number>>({});
@@ -103,11 +106,17 @@ export default function RecommendationPage() {
         fetchedMenus = limitedMenus;
         fetchedWeights = data.weights ?? {};
         fetchedRaw = data.raw ?? null;
+
+        // API 응답의 flags로 테마 설정
+        const flags = data.flags || generateWeatherFlags(data.raw);
+        setThemeFromFlags(flags);
       } catch (error: any) {
         errorMessage = error?.message ?? "추천 데이터를 불러오는 중 문제가 발생했습니다.";
         fetchedMenus = FALLBACK_MENUS;
         fetchedWeights = {};
         fetchedRaw = null;
+        // API 실패 시 기본 테마
+        setThemeFromFlags([]);
       }
 
       const imageIndex = await indexPromise;
@@ -132,25 +141,62 @@ export default function RecommendationPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [setThemeFromFlags]);
+
+  // 날씨 데이터를 flags로 변환하는 함수
+  function generateWeatherFlags(raw: any): string[] {
+    const flags: string[] = [];
+
+    if (!raw) return flags;
+
+    // 온도 기반
+    if (typeof raw.T1H === 'number') {
+      if (raw.T1H >= 28) flags.push('hot');
+      if (raw.T1H <= 5) flags.push('cold');
+    }
+
+    // 강수 형태
+    if (raw.PTY) {
+      if (raw.PTY === 1 || raw.PTY === 4) flags.push('rain');
+      if (raw.PTY === 2 || raw.PTY === 3) flags.push('snow');
+    }
+
+    // 하늘 상태
+    if (raw.SKY) {
+      if (raw.SKY >= 3) flags.push('cloudy');
+    }
+
+    // 습도
+    if (typeof raw.REH === 'number' && raw.REH >= 80) {
+      flags.push('humid');
+    }
+
+    // 풍속
+    if (typeof raw.WSD === 'number' && raw.WSD >= 4) {
+      flags.push('windy');
+    }
+
+    return flags;
+  }
 
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 flex flex-col max-w-md mx-auto">
-      <header className="sticky top-0 z-50 px-6 py-4 text-white dark:text-white bg-black/30 dark:bg-black/40 backdrop-blur-md">
+    <div className="min-h-screen flex flex-col max-w-md mx-auto transition-colors duration-500" style={{ color: 'var(--app-fg)' }}>
+      <header className="sticky top-0 z-50 px-6 py-4 backdrop-blur-md transition-colors duration-500" style={{ background: 'rgba(0,0,0,0.3)', color: 'var(--app-fg)' }}>
         <div className="mx-auto max-w-md flex items-center justify-between">
           <button
             type="button"
             onClick={() => router.back()}
-            className="h-12 w-12 grid place-items-center rounded-full bg-white/20 shadow-lg"
+            className="h-12 w-12 grid place-items-center rounded-full shadow-lg transition-colors duration-500"
+            style={{ backgroundColor: 'var(--app-accent)', opacity: 0.8 }}
             aria-label="뒤로가기"
           >
-            <span className="material-symbols-outlined text-2xl drop-shadow-sm">arrow_back</span>
+            <span className="material-symbols-outlined text-2xl drop-shadow-sm text-white">arrow_back</span>
           </button>
-          <span className="text-base font-bold truncate drop-shadow-sm">추천 메뉴 리스트</span>
+          <span className="text-base font-bold truncate drop-shadow-sm" style={{ color: 'var(--app-fg)' }}>추천 메뉴 리스트</span>
           <div className="w-12" aria-hidden />
         </div>
         {errMsg ? (
-          <p className="mt-3 text-center text-base text-red-300 font-semibold drop-shadow-sm">주의: {errMsg} (임시 추천 표시 중)</p>
+          <p className="mt-3 text-center text-base font-semibold drop-shadow-sm" style={{ color: 'var(--app-accent)' }}>주의: {errMsg} (임시 추천 표시 중)</p>
         ) : null}
       </header>
 
@@ -162,10 +208,10 @@ export default function RecommendationPage() {
             {menus.length > 0 ? (
               <MenuList menus={menus} />
             ) : (
-              <p className="py-16 text-center text-gray-900 dark:text-gray-100 opacity-80 text-lg font-semibold">추천 결과가 없습니다.</p>
+              <p className="py-16 text-center opacity-80 text-lg font-semibold" style={{ color: 'var(--app-fg)' }}>추천 결과가 없습니다.</p>
             )}
 
-            <section className="rounded-xl bg-white/95 dark:bg-black/60 text-gray-900 dark:text-gray-100 shadow-md ring-1 ring-black/10 dark:ring-white/20 p-6">
+            <section className="rounded-xl shadow-md ring-1 p-6 transition-colors duration-500" style={{ backgroundColor: 'var(--app-card)', color: 'var(--app-fg)', borderColor: 'var(--app-accent)' }}>
               <h2 className="mb-4 text-base font-bold">요약</h2>
               <pre className="whitespace-pre-wrap text-sm opacity-85 leading-relaxed">
                 {JSON.stringify(
@@ -182,12 +228,13 @@ export default function RecommendationPage() {
         )}
       </main>
 
-      <footer className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-black/70 backdrop-blur border-t border-black/15 dark:border-white/15 shadow-lg">
+      <footer className="fixed bottom-0 inset-x-0 z-40 backdrop-blur border-t shadow-lg transition-colors duration-500" style={{ backgroundColor: 'var(--app-card)', borderColor: 'var(--app-accent)' }}>
         <div className="mx-auto max-w-md p-4">
           <button
             type="button"
             onClick={() => router.push("/")}
-            className="w-full h-16 rounded-xl font-bold text-lg bg-primary text-white hover:opacity-90 active:opacity-80 flex items-center justify-center gap-3 shadow-md transition-all"
+            className="w-full h-16 rounded-xl font-bold text-lg text-white hover:opacity-90 active:opacity-80 flex items-center justify-center gap-3 shadow-md transition-all"
+            style={{ backgroundColor: 'var(--app-accent)' }}
           >
             <span className="material-symbols-outlined text-2xl">home</span>
             <span>홈으로 돌아가기</span>
