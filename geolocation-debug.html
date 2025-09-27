@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Geolocation 디버깅</title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <h1>Geolocation API 테스트</h1>
+    <div id="status">테스트 시작...</div>
+    <div id="result"></div>
+    <div id="error"></div>
+
+    <button onclick="testGeolocation()">위치 정보 요청</button>
+
+    <script>
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        function testGeolocation() {
+            updateStatus('위치 정보를 요청하는 중...');
+
+            // 브라우저 지원 여부 확인
+            if (!navigator.geolocation) {
+                document.getElementById('error').textContent = '브라우저가 Geolocation을 지원하지 않습니다.';
+                return;
+            }
+
+            // 권한 상태 확인 (지원하는 브라우저에서만)
+            if ('permissions' in navigator) {
+                navigator.permissions.query({name: 'geolocation'}).then(function(permission) {
+                    console.log('권한 상태:', permission.state);
+                    updateStatus('권한 상태: ' + permission.state);
+                });
+            }
+
+            // 위치 정보 요청
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    updateStatus('성공!');
+                    document.getElementById('result').innerHTML =
+                        '위도: ' + position.coords.latitude + '<br>' +
+                        '경도: ' + position.coords.longitude + '<br>' +
+                        '정확도: ' + position.coords.accuracy + 'm';
+                },
+                function(error) {
+                    updateStatus('실패');
+                    let errorMsg = '';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg = "사용자가 위치 정보 요청을 거부했습니다.";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg = "위치 정보를 사용할 수 없습니다.";
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg = "위치 정보 요청이 시간 초과되었습니다.";
+                            break;
+                        default:
+                            errorMsg = "알 수 없는 오류가 발생했습니다.";
+                            break;
+                    }
+                    document.getElementById('error').textContent = errorMsg + ' (코드: ' + error.code + ')';
+                },
+                {
+                    enableHighAccuracy: false,
+                    timeout: 10000,
+                    maximumAge: 300000
+                }
+            );
+        }
+
+        // 페이지 로드시 자동 테스트
+        window.onload = function() {
+            testGeolocation();
+        };
+    </script>
+</body>
+</html>
