@@ -1,157 +1,159 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { AlertCircle, Home as HomeIcon } from "lucide-react";
-import MenuList, { type MenuListItem } from "@/components/MenuList";
 
-type RecoResponse = {
-  menus: MenuListItem[];
+import { useEffect, useMemo, useState } from "react";
+import LoadingSequence from "@/components/LoadingSequence";
+import MenuList, { type MenuItem } from "@/components/MenuList";
+
+type RecoApiRes = {
+  menus?: { name: string; score: number; imageUrl?: string }[];
   weights?: Record<string, number>;
   raw?: unknown;
+  error?: string;
 };
 
-const FALLBACK_MENUS: MenuListItem[] = [
+const FALLBACK_MENUS: MenuItem[] = [
   { name: "국밥", score: 0.82 },
-  { name: "냉면", score: 0.78 },
-  { name: "비빔밥", score: 0.74 },
+  { name: "비빔밥", score: 0.76 },
+  { name: "라멘", score: 0.72 },
 ];
 
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getPosition(options?: PositionOptions) {
+  return new Promise<GeolocationPosition>((resolve, reject) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      reject(new Error("위치 정보를 사용할 수 없습니다."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, options);
+  });
+}
+
 export default function RecommendationPage() {
-  const router = useRouter();
-  const [menus, setMenus] = useState<MenuListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [weights, setWeights] = useState<Record<string, number> | null>(null);
+  const [phase, setPhase] = useState<"loading" | "ready">("loading");
+  const [menus, setMenus] = useState<MenuItem[]>([]);
+  const [weights, setWeights] = useState<Record<string, number>>({});
+  const [raw, setRaw] = useState<unknown>(null);
+  const [errMsg, setErrMsg] = useState<string>("");
+
+  const loadingMessages = useMemo(
+    () => [
+      "지금은 날씨를 확인하고 있습니다...",
+      "지금은 주변 환경을 분석 중입니다...",
+      "메뉴 데이터셋을 불러오는 중입니다...",
+      "복잡한 연산을 통해 메뉴를 계산하는 중...",
+    ],
+    []
+  );
 
   useEffect(() => {
     let cancelled = false;
 
-    const applyFallback = (message: string) => {
-      if (cancelled) return;
-      setMenus(FALLBACK_MENUS);
-      setWeights(null);
-      setError(message);
-      setLoading(false);
-    };
+    (async () => {
+      const minDelayPromise = delay(3000);
+      let fetchedMenus: MenuItem[] | null = null;
+      let fetchedWeights: Record<string, number> | null = null;
+      let fetchedRaw: unknown = null;
+      let errorMessage = "";
 
-    const fetchRecommendation = async (lat: number, lng: number) => {
       try {
+        const position = await getPosition({ enableHighAccuracy: true, timeout: 8000 });
         const response = await fetch("/api/reco", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ lat, lng }),
+          body: JSON.stringify({ lat: position.coords.latitude, lng: position.coords.longitude }),
+          cache: "no-store",
         });
+
         if (!response.ok) {
-          throw new Error(`API ${response.status}`);
+          const text = await response.text();
+          throw new Error(text || `추천 API 실패 (${response.status})`);
         }
-        const data: RecoResponse = await response.json();
+
+        const data: RecoApiRes = await response.json();
         const sortedMenus = Array.isArray(data.menus)
           ? [...data.menus].sort((a, b) => b.score - a.score)
           : [];
-        const topMenus = sortedMenus.slice(0, Math.max(3, Math.min(sortedMenus.length, 5)));
-        if (!topMenus.length) {
-          throw new Error("NO_RESULTS");
-        }
-        if (cancelled) return;
-        setMenus(topMenus);
-        setWeights(data.weights ?? null);
-        setError(null);
-      } catch (err) {
-        console.error("Recommendation fetch failed", err);
-        applyFallback("임시 추천 메뉴를 보여드립니다");
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
+        const limitedMenus = sortedMenus.slice(0, Math.max(3, Math.min(sortedMenus.length, 5)));
 
-    const requestPosition = () => {
-      if (!("geolocation" in navigator)) {
-        applyFallback("위치 정보를 사용할 수 없어 임시 추천을 제공합니다.");
-        return;
+        if (!limitedMenus.length) {
+          throw new Error("추천 결과가 비어 있습니다.");
+        }
+
+        fetchedMenus = limitedMenus;
+        fetchedWeights = data.weights ?? {};
+        fetchedRaw = data.raw ?? null;
+      } catch (error: any) {
+        errorMessage = error?.message ?? "추천 데이터를 불러오는 중 문제가 발생했습니다.";
+        fetchedMenus = FALLBACK_MENUS;
+        fetchedWeights = {};
+        fetchedRaw = null;
       }
 
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          if (cancelled) return;
-          const { latitude, longitude } = position.coords;
-          fetchRecommendation(latitude, longitude).catch(() => {
-            applyFallback("임시 추천 메뉴를 보여드립니다");
-          });
-        },
-        () => {
-          applyFallback("위치 권한이 필요해 임시 추천을 제공합니다.");
-        },
-        { enableHighAccuracy: false, timeout: 8000 }
-      );
-    };
+      await minDelayPromise;
 
-    setLoading(true);
-    setError(null);
-    requestPosition();
+      if (cancelled) return;
+
+      setMenus(fetchedMenus ?? FALLBACK_MENUS);
+      setWeights(fetchedWeights ?? {});
+      setRaw(fetchedRaw);
+      setErrMsg(errorMessage);
+      setPhase("ready");
+    })();
 
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const skeletonItems = useMemo(
-    () =>
-      Array.from({ length: 3 }).map((_, index) => (
-        <div
-          key={`skeleton-${index}`}
-          className="h-24 animate-pulse rounded-2xl bg-white/50 shadow dark:bg-white/10"
-        />
-      )),
-    []
-  );
+  if (phase === "loading") {
+    return (
+      <div className="min-h-screen bg-background-light text-black dark:bg-background-dark dark:text-white">
+        <header className="sticky top-0 z-10 p-4">
+          <h1 className="text-center text-xl font-bold">추천 준비 중</h1>
+        </header>
+        <LoadingSequence messages={loadingMessages} totalMs={3000} stepMs={800} />
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-background-light dark:bg-background-dark font-display text-black dark:text-white">
-      <div className="flex min-h-[100dvh] flex-col">
-        <header className="sticky top-0 z-20 border-b border-white/20 bg-white/70 px-4 py-5 text-center shadow-sm backdrop-blur dark:border-white/10 dark:bg-black/50">
-          <h1 className="text-xl font-bold text-primary dark:text-white">추천 메뉴 리스트</h1>
-        </header>
-        <main className="flex-1 overflow-y-auto px-4 py-6">
-          {error ? (
-            <div className="mb-4 flex items-start gap-2 rounded-xl border border-yellow-400/60 bg-yellow-100/70 p-4 text-sm text-yellow-800 dark:border-yellow-500/50 dark:bg-yellow-500/20 dark:text-yellow-100">
-              <AlertCircle className="mt-0.5 h-5 w-5" />
-              <span>{error}</span>
-            </div>
-          ) : null}
+    <div className="mx-auto flex h-screen max-w-md flex-col bg-background-light text-black dark:bg-background-dark dark:text-white">
+      <header className="sticky top-0 z-10 p-4">
+        <h1 className="text-center text-xl font-bold">추천 메뉴 리스트</h1>
+        {errMsg ? (
+          <p className="mt-2 text-center text-sm text-red-500">주의: {errMsg} (임시 추천 표시 중)</p>
+        ) : null}
+      </header>
 
-          {loading ? (
-            <div className="space-y-4">{skeletonItems}</div>
-          ) : (
-            <MenuList menus={menus} />
-          )}
+      <main className="flex-grow space-y-6 overflow-y-auto px-4 pb-4">
+        {menus.length > 0 ? <MenuList menus={menus} /> : <p className="text-center text-gray-500">추천 결과가 없습니다.</p>}
 
-          {weights ? (
-            <section className="mt-8 rounded-2xl border border-white/30 bg-white/60 p-4 shadow dark:border-white/10 dark:bg-black/30">
-              <h2 className="text-sm font-semibold text-primary dark:text-white">계산된 날씨 가중치</h2>
-              <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-black/70 dark:text-white/70">
-                {Object.entries(weights).map(([key, value]) => (
-                  <div key={key} className="flex items-center justify-between rounded-lg bg-white/60 px-3 py-2 dark:bg-black/30">
-                    <dt className="font-medium text-black dark:text-white">{key}</dt>
-                    <dd>{value.toFixed(2)}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
-          ) : null}
-        </main>
-        <footer className="sticky bottom-0 z-20 border-t border-white/30 bg-white/80 px-4 py-4 backdrop-blur dark:border-white/10 dark:bg-black/50">
-          <button
-            type="button"
-            aria-label="홈으로 돌아가기"
-            onClick={() => router.push("/")}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-primary/20 px-4 py-3 text-base font-semibold text-primary transition hover:opacity-90 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
-          >
-            <HomeIcon className="h-5 w-5" />
-            홈으로 돌아가기
-          </button>
-        </footer>
+        <section className="mt-4 rounded-xl bg-white/60 p-4 dark:bg-black/20">
+          <h2 className="mb-2 text-sm font-semibold">요약</h2>
+          <pre className="whitespace-pre-wrap text-xs">
+            {JSON.stringify(
+              {
+                weights,
+                raw,
+              },
+              null,
+              2
+            )}
+          </pre>
+        </section>
+      </main>
+
+      <div className="sticky bottom-0 px-4 pb-4">
+        <a
+          href="/"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 px-4 font-bold text-white"
+        >
+          <span className="material-symbols-outlined">home</span>
+          <span>홈으로 돌아가기</span>
+        </a>
       </div>
     </div>
   );
