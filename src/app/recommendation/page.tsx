@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import LoadingSequence from "@/components/LoadingSequence";
 import MenuList, { type MenuItem } from "@/components/MenuList";
 
@@ -17,6 +18,19 @@ const FALLBACK_MENUS: MenuItem[] = [
   { name: "라멘", score: 0.72 },
 ];
 
+const PLACEHOLDER_IMAGE = "https://via.placeholder.com/64";
+
+async function loadImageIndex() {
+  try {
+    const res = await fetch("/kfood-index.json", { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as Record<string, string>;
+  } catch (error) {
+    console.warn("[kfood-index] load failed", error);
+    return {} as Record<string, string>;
+  }
+}
+
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -32,6 +46,7 @@ function getPosition(options?: PositionOptions) {
 }
 
 export default function RecommendationPage() {
+  const router = useRouter();
   const [phase, setPhase] = useState<"loading" | "ready">("loading");
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [weights, setWeights] = useState<Record<string, number>>({});
@@ -53,6 +68,7 @@ export default function RecommendationPage() {
 
     (async () => {
       const minDelayPromise = delay(3000);
+      const indexPromise = loadImageIndex();
       let fetchedMenus: MenuItem[] | null = null;
       let fetchedWeights: Record<string, number> | null = null;
       let fetchedRaw: unknown = null;
@@ -94,11 +110,19 @@ export default function RecommendationPage() {
         fetchedRaw = null;
       }
 
+      const imageIndex = await indexPromise;
       await minDelayPromise;
 
       if (cancelled) return;
 
-      setMenus((fetchedMenus ?? FALLBACK_MENUS).slice(0, 10));
+      const finalMenus = (fetchedMenus ?? FALLBACK_MENUS)
+        .slice(0, 10)
+        .map((menu) => ({
+          ...menu,
+          imageUrl: imageIndex?.[menu.name] ? decodeURI(imageIndex[menu.name]) : PLACEHOLDER_IMAGE,
+        }));
+
+      setMenus(finalMenus);
       setWeights(fetchedWeights ?? {});
       setRaw(fetchedRaw);
       setErrMsg(errorMessage);
@@ -110,53 +134,66 @@ export default function RecommendationPage() {
     };
   }, []);
 
-  if (phase === "loading") {
-    return (
-      <div className="min-h-screen bg-background-light text-black dark:bg-background-dark dark:text-white">
-        <header className="sticky top-0 z-10 p-4">
-          <h1 className="text-center text-xl font-bold">추천 준비 중</h1>
-        </header>
-        <LoadingSequence messages={loadingMessages} totalMs={3000} stepMs={800} />
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto flex h-screen max-w-md flex-col bg-background-light text-black dark:bg-background-dark dark:text-white">
-      <header className="sticky top-0 z-10 p-4">
-        <h1 className="text-center text-xl font-bold">추천 메뉴 리스트</h1>
+    <div className="min-h-screen bg-background-light dark:bg-background-dark text-gray-900 dark:text-gray-100 flex flex-col max-w-md mx-auto">
+      <header className="sticky top-0 z-50 px-4 py-3 text-white dark:text-white bg-black/20 dark:bg-black/30 backdrop-blur-md">
+        <div className="mx-auto max-w-md flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="h-10 w-10 grid place-items-center rounded-full bg-white/15"
+            aria-label="뒤로가기"
+          >
+            <span className="material-symbols-outlined text-xl">arrow_back</span>
+          </button>
+          <span className="text-sm font-semibold truncate">추천 메뉴 리스트</span>
+          <div className="w-10" aria-hidden />
+        </div>
         {errMsg ? (
-          <p className="mt-2 text-center text-sm text-red-500">주의: {errMsg} (임시 추천 표시 중)</p>
+          <p className="mt-2 text-center text-sm text-red-400">주의: {errMsg} (임시 추천 표시 중)</p>
         ) : null}
       </header>
 
-      <main className="flex-grow space-y-6 overflow-y-auto px-4 pb-4">
-        {menus.length > 0 ? <MenuList menus={menus} /> : <p className="text-center text-gray-500">추천 결과가 없습니다.</p>}
-
-        <section className="mt-4 rounded-xl bg-white/60 p-4 dark:bg-black/20">
-          <h2 className="mb-2 text-sm font-semibold">요약</h2>
-          <pre className="whitespace-pre-wrap text-xs">
-            {JSON.stringify(
-              {
-                weights,
-                raw,
-              },
-              null,
-              2
+      <main className="px-4 pb-24 pt-16 mx-auto max-w-md flex-1 overflow-y-auto">
+        {phase === "loading" ? (
+          <LoadingSequence messages={loadingMessages} totalMs={3000} stepMs={800} />
+        ) : (
+          <div className="space-y-6 pt-4">
+            {menus.length > 0 ? (
+              <MenuList menus={menus} />
+            ) : (
+              <p className="py-12 text-center text-gray-900 dark:text-gray-100 opacity-70">추천 결과가 없습니다.</p>
             )}
-          </pre>
-        </section>
+
+            <section className="rounded-xl bg-white/90 dark:bg-black/50 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-black/5 dark:ring-white/10 p-4">
+              <h2 className="mb-2 text-sm font-semibold">요약</h2>
+              <pre className="whitespace-pre-wrap text-xs opacity-80">
+                {JSON.stringify(
+                  {
+                    weights,
+                    raw,
+                  },
+                  null,
+                  2
+                )}
+              </pre>
+            </section>
+          </div>
+        )}
       </main>
 
-      <div className="sticky bottom-0 px-4 pb-4">
-        <a
-          href="/"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 px-4 font-bold text-white"
-        >
-          <span className="material-symbols-outlined">home</span>
-          <span>홈으로 돌아가기</span>
-        </a>
-      </div>
+      <footer className="fixed bottom-0 inset-x-0 z-40 bg-white/90 dark:bg-black/60 backdrop-blur border-t border-black/10 dark:border-white/10">
+        <div className="mx-auto max-w-md p-3">
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="w-full h-12 rounded-lg font-semibold bg-primary text-white hover:opacity-90 active:opacity-80 flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined">home</span>
+            <span>홈으로 돌아가기</span>
+          </button>
+        </div>
+      </footer>
     </div>
   );
 }
