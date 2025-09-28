@@ -174,26 +174,29 @@ export default function Home() {
           },
           (error) => {
             clearTimeout(timeoutId);
-            console.error("❌ Geolocation error:", error);
+
+            const geoError = error as Partial<GeolocationPositionError> & { code?: number; message?: string };
+            const errorCode = typeof geoError.code === 'number' ? geoError.code : undefined;
+            const message = (geoError && typeof geoError.message === 'string' && geoError.message.trim()) ? geoError.message : undefined;
 
             let errorMsg = '';
-            switch(error.code) {
-              case error.PERMISSION_DENIED:
+            switch (errorCode) {
+              case 1: // PERMISSION_DENIED
                 errorMsg = "위치 권한이 거부되었습니다. 브라우저 설정에서 위치 권한을 허용해주세요.";
                 break;
-              case error.POSITION_UNAVAILABLE:
+              case 2: // POSITION_UNAVAILABLE
                 errorMsg = "위치 정보를 사용할 수 없습니다. GPS가 활성화되어 있는지 확인해주세요.";
                 break;
-              case error.TIMEOUT:
+              case 3: // TIMEOUT
                 errorMsg = "위치 정보 요청이 시간 초과되었습니다. 다시 시도해주세요.";
                 break;
               default:
-                errorMsg = "알 수 없는 오류가 발생했습니다.";
+                errorMsg = message ? `위치 오류: ${message}` : "알 수 없는 오류가 발생했습니다.";
                 break;
             }
 
-            alert(errorMsg);
-            reject(error);
+            console.warn("⚠️ Geolocation error:", errorMsg);
+            reject(new Error(errorMsg));
           },
           {
             enableHighAccuracy: true, // 정확도 우선
@@ -215,7 +218,7 @@ export default function Home() {
       };
 
     } catch (error) {
-      console.error("💥 Geolocation failed:", error);
+      console.warn("💥 Geolocation failed, using fallback location:", error);
       console.log("📍 Using default location (Seoul)");
       return defaultLocation;
     }
@@ -332,8 +335,8 @@ export default function Home() {
           aria-label="지금 뭐 먹지?로 이동"
         >
           <div className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] text-center">
-            <span className="material-symbols-outlined text-8xl mb-2 block">restaurant_menu</span>
-            <p className="text-xl font-extrabold tracking-tight">지금 뭐 먹지?</p>
+            <span className="material-symbols-outlined text-6xl mb-3 block">restaurant_menu</span>
+            <p className="text-3xl font-extrabold tracking-tight leading-snug">지금 뭐 먹지?</p>
           </div>
         </div>
       </main>

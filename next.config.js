@@ -9,4 +9,13 @@ const nextConfig = {
   },
 }
 
+// next.config.js
+module.exports = {
+  devIndicators: {
+    buildActivity: false,
+  },
+};
+
 module.exports = nextConfig
+
+

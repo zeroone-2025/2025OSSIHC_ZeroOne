@@ -97,10 +97,10 @@
   },
   {
     "time": "12:00",
-    "temp_c": 22,
-    "humidity_pct": 65,
-    "precip_mm": 0,
-    "wind_ms": 3.2,
+    "temp_c": 21.6,
+    "humidity_pct": 92,
+    "precip_mm": 1.2,
+    "wind_ms": 2.3,
     "cloud_10": 2
   },
   {
