@@ -1,11 +1,13 @@
+// TODO: Replace mock weather with real API later
 import { NextRequest, NextResponse } from 'next/server';
-import { pickKSTHour, deriveWeights } from '@/lib/mockWeather';
+import { pickKSTHour, deriveWeights, getMockWeather } from '@/lib/mockWeather';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(_req: NextRequest) {
   try {
-    const row = pickKSTHour(new Date());
+    const rows = await getMockWeather();
+    const row = pickKSTHour(rows, new Date());
     const weights = deriveWeights(row);
 
     return NextResponse.json({

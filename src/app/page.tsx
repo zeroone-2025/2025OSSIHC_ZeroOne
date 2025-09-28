@@ -277,13 +277,7 @@ export default function Home() {
               </span>
             )}
           </div>
-          <button
-            className="h-12 w-12 grid place-items-center rounded-full shadow-lg transition-colors duration-500"
-            style={{ backgroundColor: 'var(--app-accent)', opacity: 0.8 }}
-            aria-label="프로필"
-          >
-            <span className="material-symbols-outlined text-2xl drop-shadow-sm text-white">person</span>
-          </button>
+          <div className="w-12" aria-hidden />
         </div>
       </header>
 
@@ -307,8 +301,8 @@ export default function Home() {
           aria-label="지금 뭐 먹지?로 이동"
         >
           <div className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] text-center">
-            <span className="material-symbols-outlined text-8xl mb-2 block">restaurant_menu</span>
-            <p className="text-xl font-extrabold tracking-tight">지금 뭐 먹지?</p>
+            <span className="material-symbols-outlined text-9xl mb-4 block">restaurant_menu</span>
+            <p className="text-2xl font-extrabold tracking-tight">지금 뭐 먹지?</p>
           </div>
         </div>
       </main>

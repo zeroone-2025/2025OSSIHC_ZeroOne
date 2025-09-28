@@ -60,8 +60,16 @@ dist
 
 # Gatsby files
 .cache/
+<<<<<<< Updated upstream
 public/*
 !public/placeholder.png
+=======
+public/
+!public/
+!public/placeholder.png
+!public/data/
+!public/data/**
+>>>>>>> Stashed changes
 
 # Storybook build outputs
 .out

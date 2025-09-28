@@ -1,5 +1,5 @@
+// TODO: Replace mock weather with real API later
 import kst from './tz';
-import dataJson from '@/data/jeonju_hourly_weather_2025-09-26_simple.json' assert { type: 'json' };
 
 export type HourRow = {
   time: string;        // "HH:00"
@@ -10,7 +10,52 @@ export type HourRow = {
   cloud_10: number;
 };
 
-const rows: HourRow[] = dataJson as HourRow[];
+const WEATHER_ENDPOINT = '/data/jeonju_hourly_weather.json';
+
+let cachedRows: HourRow[] | null = null;
+
+function resolveWeatherUrl() {
+  if (typeof window !== 'undefined') {
+    return WEATHER_ENDPOINT;
+  }
+
+  const envBase =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.NEXT_BASE_URL ||
+    process.env.VERCEL_URL ||
+    process.env.SITE_URL ||
+    process.env.HOST ||
+    'http://localhost:3000';
+
+  const base = envBase.startsWith('http') ? envBase : `https://${envBase}`;
+  return new URL(WEATHER_ENDPOINT, base).toString();
+}
+
+export async function getMockWeather(): Promise<HourRow[]> {
+  if (cachedRows) {
+    return cachedRows;
+  }
+
+  const url = resolveWeatherUrl();
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) {
+    throw new Error('Failed to load weather data');
+  }
+
+  const json = (await res.json()) as HourRow[];
+  if (!Array.isArray(json)) {
+    throw new Error('Unexpected weather data format');
+  }
+
+  cachedRows = json;
+  return cachedRows;
+}
+
+export function clearMockWeatherCache() {
+  cachedRows = null;
+}
 
 /** Convert Date -> KST Date without mutating the original */
 export function toKST(d: Date): Date {
@@ -25,7 +70,7 @@ export function kstHourKey(d: Date): string {
 }
 
 /** Pick the row whose time === floor(KST hour). Fallback to nearest lower hour; if none, use first row */
-export function pickKSTHour(now = new Date()): HourRow {
+export function pickKSTHour(rows: HourRow[], now = new Date()): HourRow {
   const key = kstHourKey(now);
   const exact = rows.find(r => r.time === key);
   if (exact) return exact;
