@@ -22,6 +22,7 @@ export default function Home() {
   const [locationAddress, setLocationAddress] = useState<string>("");
   const [weather, setWeather] = useState<ProcessedWeather | null>(null);
   const [weatherTimeKey, setWeatherTimeKey] = useState<string | null>(null);
+  const [currentTimeDisplay, setCurrentTimeDisplay] = useState<string>("");
 
   useEffect(() => {
     // 홈 렌더링 시 날씨 API 호출하여 테마 설정
@@ -87,6 +88,30 @@ export default function Home() {
 
     fetchWeatherAndSetTheme();
   }, [setThemeFromFlags]);
+
+  // 실시간 시간 표시 (10분 단위로 내림)
+  useEffect(() => {
+    function updateCurrentTime() {
+      const now = new Date();
+      // 현재 시스템이 이미 KST인 경우 그대로 사용
+
+      // 분을 10분 단위로 내림
+      const minutes = Math.floor(now.getMinutes() / 10) * 10;
+      const hours = now.getHours();
+
+      // HH:MM 형태로 포맷
+      const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      setCurrentTimeDisplay(timeString);
+    }
+
+    // 초기 실행
+    updateCurrentTime();
+
+    // 1분마다 업데이트
+    const interval = setInterval(updateCurrentTime, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // 개선된 위치 정보 가져오기 함수
   async function getLocationWithFallback(): Promise<{latitude: number, longitude: number}> {
@@ -247,7 +272,7 @@ export default function Home() {
     const rounded = Math.round(amount * 10) / 10;
     return `${rounded}mm`;
   })();
-  const weatherTimeLabel = weatherTimeKey ? `${weatherTimeKey} (KST)` : null;
+  const weatherTimeLabel = currentTimeDisplay ? `${currentTimeDisplay} (KST)` : null;
 
   return (
     <div className="min-h-screen relative flex h-screen w-full flex-col justify-between font-display transition-colors duration-500" style={{ color: 'var(--app-fg)' }}>
@@ -277,7 +302,13 @@ export default function Home() {
               </span>
             )}
           </div>
-          <div className="w-12" aria-hidden />
+          <button
+            className="h-12 w-12 grid place-items-center rounded-full shadow-lg transition-colors duration-500"
+            style={{ backgroundColor: 'var(--app-accent)', opacity: 0.8 }}
+            aria-label="프로필"
+          >
+            <span className="material-symbols-outlined text-2xl drop-shadow-sm text-white">person</span>
+          </button>
         </div>
       </header>
 
@@ -301,8 +332,8 @@ export default function Home() {
           aria-label="지금 뭐 먹지?로 이동"
         >
           <div className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] text-center">
-            <span className="material-symbols-outlined text-9xl mb-4 block">restaurant_menu</span>
-            <p className="text-2xl font-extrabold tracking-tight">지금 뭐 먹지?</p>
+            <span className="material-symbols-outlined text-8xl mb-2 block">restaurant_menu</span>
+            <p className="text-xl font-extrabold tracking-tight">지금 뭐 먹지?</p>
           </div>
         </div>
       </main>

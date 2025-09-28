@@ -1,21 +1,12 @@
 // TODO: Replace mock weather with real API later
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LoadingSteps from "@/components/LoadingSteps";
 import MenuList, { type MenuItem } from "@/components/MenuList";
-import { resolveMenuImage } from "@/lib/resolveImage";
-<<<<<<< Updated upstream
-import { useWeatherTheme } from "@/theme/WeatherThemeContext";
-
-type ApiMenu = Partial<MenuItem> & {
-  id?: string;
-  name_ko?: string;
-  name_en?: string;
-  picture?: string;
-=======
 import { getMockWeather, pickKSTHour, type HourRow } from "@/lib/mockWeather";
+import { resolveMenuImage } from "@/lib/resolveImage";
 import { useWeatherTheme } from "@/theme/WeatherThemeContext";
 
 type ApiMenu = {
@@ -26,7 +17,6 @@ type ApiMenu = {
   score?: number;
   picture?: string;
   imageUrl?: string;
->>>>>>> Stashed changes
 };
 
 type RecoApiRes = {
@@ -40,15 +30,9 @@ type RecoApiRes = {
 const PLACEHOLDER_IMAGE = "/placeholder.png";
 
 const FALLBACK_MENUS: MenuItem[] = [
-<<<<<<< Updated upstream
-  { name: "국밥", score: 0.82, imageUrl: PLACEHOLDER_IMAGE },
-  { name: "비빔밥", score: 0.76, imageUrl: PLACEHOLDER_IMAGE },
-  { name: "라멘", score: 0.72, imageUrl: PLACEHOLDER_IMAGE },
-=======
   { name: "국밥", score: 82, imageUrl: PLACEHOLDER_IMAGE },
   { name: "비빔밥", score: 76, imageUrl: PLACEHOLDER_IMAGE },
   { name: "라멘", score: 72, imageUrl: PLACEHOLDER_IMAGE },
->>>>>>> Stashed changes
 ];
 
 function delay(ms: number) {
@@ -67,6 +51,36 @@ function toWeatherRaw(row: HourRow | null) {
     SNO: 0,
     RN1: row.precip_mm,
   };
+}
+
+function generateWeatherFlags(raw: any): string[] {
+  const flags: string[] = [];
+
+  if (!raw) return flags;
+
+  if (typeof raw.T1H === "number") {
+    if (raw.T1H >= 28) flags.push("hot");
+    if (raw.T1H <= 5) flags.push("cold");
+  }
+
+  if (raw.PTY) {
+    if (raw.PTY === 1 || raw.PTY === 4) flags.push("rain");
+    if (raw.PTY === 2 || raw.PTY === 3) flags.push("snow");
+  }
+
+  if (raw.SKY) {
+    if (raw.SKY >= 3) flags.push("cloudy");
+  }
+
+  if (typeof raw.REH === "number" && raw.REH >= 80) {
+    flags.push("humid");
+  }
+
+  if (typeof raw.WSD === "number" && raw.WSD >= 4) {
+    flags.push("windy");
+  }
+
+  return flags;
 }
 
 // 개선된 위치 정보 가져오기 함수
@@ -130,6 +144,14 @@ async function getLocationWithFallback(): Promise<{ latitude: number; longitude:
 }
 
 export default function RecommendationPage() {
+  return (
+    <Suspense fallback={<RecommendationFallback />}>
+      <RecommendationPageContent />
+    </Suspense>
+  );
+}
+
+function RecommendationPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setThemeFromFlags } = useWeatherTheme();
@@ -158,9 +180,6 @@ export default function RecommendationPage() {
     }
 
     (async () => {
-<<<<<<< Updated upstream
-      const minDelayPromise = delay(3000);
-=======
       const minDelayPromise = delay(5000);
       const weatherPromise = getMockWeather()
         .then((rows) => pickKSTHour(rows, new Date()))
@@ -168,8 +187,6 @@ export default function RecommendationPage() {
           console.warn("[mock-weather] load failed", error);
           return null;
         });
-
->>>>>>> Stashed changes
       let fetchedMenus: ApiMenu[] | null = null;
       let errorMessage = "";
       let themeFlags: string[] = [];
@@ -193,14 +210,7 @@ export default function RecommendationPage() {
         const data: RecoApiRes = await response.json();
         const sortedMenus = Array.isArray(data.menus)
           ? [...data.menus]
-<<<<<<< Updated upstream
-              .map((menu) => ({
-                ...menu,
-                score: Number.isFinite(menu.score) ? Number(menu.score) : 0,
-              }))
-=======
               .map((menu) => ({ ...menu, score: Number.isFinite(menu.score) ? Number(menu.score) : 0 }))
->>>>>>> Stashed changes
               .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
           : [];
         const limitedMenus = sortedMenus.slice(0, 10);
@@ -220,45 +230,15 @@ export default function RecommendationPage() {
         errorMessage = error?.message ?? "추천 데이터를 불러오는 중 문제가 발생했습니다.";
       }
 
-<<<<<<< Updated upstream
-      await minDelayPromise;
-=======
       const weatherRow = await weatherPromise;
       if (!themeFlags.length) {
         themeFlags = generateWeatherFlags(toWeatherRaw(weatherRow));
       }
       setThemeFromFlags(themeFlags);
->>>>>>> Stashed changes
 
       await minDelayPromise;
       if (cancelled) return;
 
-<<<<<<< Updated upstream
-      const finalMenus: MenuItem[] = (fetchedMenus ?? FALLBACK_MENUS)
-        .slice(0, 10)
-        .map((menu) => {
-          const source = menu as ApiMenu;
-          const nameCandidate =
-            (typeof source.name_ko === "string" && source.name_ko.trim()) ||
-            (typeof source.name === "string" && source.name.trim()) ||
-            (typeof source.name_en === "string" && source.name_en.trim()) ||
-            (typeof source.id === "string" && source.id.trim()) ||
-            "메뉴";
-          const scoreValue =
-            typeof source.score === "number" && Number.isFinite(source.score)
-              ? source.score
-              : 0;
-          const imageSource =
-            typeof source.picture === "string" && source.picture
-              ? source.picture
-              : source.imageUrl;
-          return {
-            name: nameCandidate,
-            score: scoreValue,
-            imageUrl: resolveMenuImage(imageSource, nameCandidate),
-          };
-        });
-=======
       const usingApiMenus = Array.isArray(fetchedMenus) && fetchedMenus.length > 0;
       const sourceMenus = (usingApiMenus ? fetchedMenus : FALLBACK_MENUS) as (ApiMenu | MenuItem)[];
 
@@ -290,7 +270,6 @@ export default function RecommendationPage() {
           imageUrl: resolveMenuImage(imageSource, nameCandidate),
         };
       });
->>>>>>> Stashed changes
 
       setMenus(finalMenus);
       setErrMsg(errorMessage);
@@ -307,42 +286,6 @@ export default function RecommendationPage() {
       cancelled = true;
     };
   }, [setThemeFromFlags, skipLoading]);
-
-  // 날씨 데이터를 flags로 변환하는 함수
-  function generateWeatherFlags(raw: any): string[] {
-    const flags: string[] = [];
-
-    if (!raw) return flags;
-
-    // 온도 기반
-    if (typeof raw.T1H === "number") {
-      if (raw.T1H >= 28) flags.push("hot");
-      if (raw.T1H <= 5) flags.push("cold");
-    }
-
-    // 강수 형태
-    if (raw.PTY) {
-      if (raw.PTY === 1 || raw.PTY === 4) flags.push("rain");
-      if (raw.PTY === 2 || raw.PTY === 3) flags.push("snow");
-    }
-
-    // 하늘 상태
-    if (raw.SKY) {
-      if (raw.SKY >= 3) flags.push("cloudy");
-    }
-
-    // 습도
-    if (typeof raw.REH === "number" && raw.REH >= 80) {
-      flags.push("humid");
-    }
-
-    // 풍속
-    if (typeof raw.WSD === "number" && raw.WSD >= 4) {
-      flags.push("windy");
-    }
-
-    return flags;
-  }
 
   return (
     <div
@@ -434,6 +377,16 @@ export default function RecommendationPage() {
           </button>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function RecommendationFallback() {
+  return (
+    <div className="min-h-screen flex flex-col max-w-md mx-auto transition-colors duration-500">
+      <main className="px-6 pb-28 pt-6 mx-auto max-w-md flex-1 flex flex-col">
+        <LoadingSteps onDone={() => {}} stepDuration={700} />
+      </main>
     </div>
   );
 }

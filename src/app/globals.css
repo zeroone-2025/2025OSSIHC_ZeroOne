@@ -149,3 +149,13 @@ button:focus-visible {
   font-feature-settings: "liga";
   -webkit-font-smoothing: antialiased;
 }
+
+/* Hide Next.js loading spinner */
+svg[data-next-mark-loading] {
+  display: none !important;
+}
+
+/* Hide any Next.js loading indicators */
+[data-next-loading] {
+  display: none !important;
+}

@@ -66,6 +66,43 @@ export function pickSecondaryIcons(p: ProcessedWeather | undefined): string[] {
   return out;
 }
 
+/** Convert weather icon to emoji */
+export function getWeatherEmoji(icon: string): string {
+  switch (icon) {
+    case "clear_day":
+    case "sunny":
+      return "☀";
+    case "cloud":
+      return "⛅";
+    case "cloudy":
+      return "☁";
+    case "rainy":
+      return "🌧";
+    case "weather_snowy":
+      return "❄";
+    case "cloudy_snowing":
+      return "🌨";
+    case "ac_unit":
+      return "🥶";
+    case "thermostat":
+      return "🌡";
+    case "water_drop":
+      return "💧";
+    case "air":
+      return "💨";
+    case "device_thermostat":
+      return "🔥";
+    default:
+      return "🌤"; // default weather emoji
+  }
+}
+
+/** Get main weather emoji based on processed weather data */
+export function getMainWeatherEmoji(p: ProcessedWeather | undefined): string {
+  const icon = pickMainWeatherIcon(p);
+  return getWeatherEmoji(icon);
+}
+
 function isHot(t?: number) {
   return typeof t === "number" && t >= 28;
 }
